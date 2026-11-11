@@ -14,7 +14,7 @@ public class HomeController {
     @FXML private Button itemButton;
     @FXML private Button auctionButton;
     @FXML private Button manageItemButton;
-    @FXML private Button logoutButton;
+    @FXML private Button logoutButton;   
 
     @FXML
     public void initialize() {
