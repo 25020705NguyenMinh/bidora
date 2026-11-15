@@ -20,6 +20,7 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
+import javafx.util.StringConverter;
 import vn.edu.auction.client.I18n;
 import vn.edu.auction.client.api.AuthApiClient;
 import vn.edu.auction.client.controller.NavigationController;
@@ -39,10 +40,7 @@ import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-import com.sun.net.httpserver.HttpServer;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
+
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -50,8 +48,6 @@ import javafx.scene.control.Hyperlink;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyCode;
 import java.util.function.UnaryOperator;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 
 public class AuthController {
 
@@ -72,6 +68,7 @@ public class AuthController {
 
     @FXML private TextField firstNameField;
     @FXML private TextField lastNameField;
+    @FXML private ComboBox<UserRole> roleComboBox;
     @FXML private Label firstNameError;
     @FXML private Label lastNameError;
 
@@ -131,6 +128,16 @@ public class AuthController {
         }
 
         setupLanguageComboBox();
+        if (roleComboBox != null) {
+            roleComboBox.getItems().setAll(UserRole.BIDDER, UserRole.SELLER);
+            roleComboBox.setConverter(new StringConverter<>() {
+                @Override public String toString(UserRole role) {
+                    return role == null ? "" : I18n.get("role." + role.name());
+                }
+                @Override public UserRole fromString(String value) { return null; }
+            });
+            roleComboBox.setValue(parseRole(RegisterData.role));
+        }
 
         if (emailField != null) {
             emailField.setText(RegisterData.email);
@@ -219,6 +226,9 @@ public class AuthController {
             showMessage(I18n.get("error.openView"));
             return;
         }
+        if (!stage.isShowing()) {
+            return;
+        }
         // 1) Lưu AuthResponse (có token) vào phiên để các màn hình sau dùng gọi API.
         SessionData.getInstance().setSession(response);
 
@@ -228,6 +238,11 @@ public class AuthController {
             passwordField.clear();
         }
         RegisterData.reset();
+
+        if (Boolean.TRUE.equals(stage.getProperties().get("auction.auth.popup"))) {
+            stage.close();
+            return;
+        }
 
         // 3) Báo cho các bộ điều hướng biết cửa sổ chính, rồi chuyển tới trang chủ.
         //    VÌ SAO set cả hai: Main chưa gọi setStage/setPrimaryStage; thiếu bước này
@@ -244,7 +259,7 @@ public class AuthController {
         startLocalCallbackServer();
 
         // 2. Mở trình duyệt gọi lên Spring Boot Server
-        String googleAuthUrl = "http://localhost:8080/oauth2/authorization/google";
+        String googleAuthUrl = "https://baitaplon-ltnc-nhom10vip.onrender.com/oauth2/authorization/google";
         openOAuthBrowser(googleAuthUrl);
     }
 
@@ -254,6 +269,10 @@ public class AuthController {
     private void startLocalCallbackServer() {
         try {
             com.sun.net.httpserver.HttpServer server = com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress(8081), 0);
+            Stage authStage = findStage();
+            if (authStage != null && Boolean.TRUE.equals(authStage.getProperties().get("auction.auth.popup"))) {
+                authStage.getProperties().put("auction.google.callback", server);
+            }
 
             server.createContext("/callback", exchange -> {
                 try {
@@ -389,13 +408,16 @@ public class AuthController {
 
         String fullName = firstNameField.getText().trim() + " " + lastNameField.getText().trim();
         String email = RegisterData.email.trim();
+        UserRole selectedRole = roleComboBox == null || roleComboBox.getValue() == null
+                ? UserRole.BIDDER : roleComboBox.getValue();
+        RegisterData.role = selectedRole.name();
 
         // Dùng đúng RegisterRequest trong module shared để gửi cho server.
         RegisterRequest request = new RegisterRequest(
                 fullName,
                 email,
                 passwordField.getText(),
-                parseRole(RegisterData.role));
+                selectedRole);
 
         runAsync(() -> AUTH_API.register(request), response -> onRegisterSuccess(email));
     }
@@ -632,6 +654,7 @@ public class AuthController {
         var css = getClass().getResource(AUTH_CSS);
         if (css != null && !scene.getStylesheets().contains(css.toExternalForm())) {
             scene.getStylesheets().add(css.toExternalForm());
+            vn.edu.auction.client.ui.UiTheme.apply(scene);
         }
     }
 

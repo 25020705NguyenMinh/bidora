@@ -1,146 +1,56 @@
-# Đăng nhập
-<img width="1915" height="1017" alt="image" src="https://github.com/user-attachments/assets/4d524765-3b80-464a-8f41-8b94efb0c6a4" />
+# TECH AUCTION
 
-Mai tôi sẽ bổ xung logo Gg face, linkln
-# Lấy lại mật khẩu
-<img width="1917" height="1021" alt="image" src="https://github.com/user-attachments/assets/7d662825-4e04-4a2a-9f0b-81efaf35877e" />
+Ứng dụng đấu giá của nhóm 10: **JavaFX** (client), **Spring Boot** (server), **MySQL** (database), module `shared` chứa DTO và enum dùng chung. Cần **JDK 21+** và **Maven 3.9+**.
 
-phần này cần xác thực OTP và kiểm tra đầu vào xem đúng cú pháp gmail chưa
-# Đăng ký tài khoản
+## Chạy lần đầu trên Windows
 
-<img width="1912" height="1020" alt="image" src="https://github.com/user-attachments/assets/f2e05237-67eb-449f-9858-d5c07c89104f" />
+1. Cài và cấu hình MySQL theo [hướng dẫn từng bước](docs/MYSQL.md). Tạo database `auction` và tài khoản `auction_app`.
+2. Chép `config/application-local.example.properties` thành `config/application-local.properties`, điền mật khẩu MySQL của bạn.
+3. Mở PowerShell tại thư mục gốc của repo (nơi có `pom.xml`), chạy:
 
-ok
-<img width="1917" height="1018" alt="image" src="https://github.com/user-attachments/assets/2080c230-49dc-4bda-aa1e-89eec79a23f2" />
+```powershell
+mvn clean install
+java -jar server/target/server-1.0-SNAPSHOT.jar
+```
 
-phần này cần xác thực OTP và kiểm tra đầu vào xem đúng cú pháp gmail chưa
+Giữ cửa sổ server mở. Mở **PowerShell thứ hai**, cũng tại thư mục gốc:
 
-
-
-##  Định hướng phát triển
-
-### 1. Hoàn thiện chức năng xác thực người dùng
-
-* [ ] **Đăng nhập**
-
-  * [ ] Kiểm tra dữ liệu đầu vào (email, mật khẩu).
-  * [ ] Xác thực thông tin đăng nhập với hệ thống.
-  * [ ] Hiển thị thông báo khi đăng nhập thành công hoặc thất bại.
-  * [ ] Điều hướng người dùng đến giao diện phù hợp với vai trò tài khoản.
-
-* [ ] **Đăng ký tài khoản**
-
-  * [ ] Xây dựng giao diện đăng ký.
-  * [ ] Kiểm tra tính hợp lệ của họ tên, email và mật khẩu.
-  * [ ] Kiểm tra email đã được sử dụng hay chưa.
-  * [ ] Lưu thông tin tài khoản vào cơ sở dữ liệu.
-  * [ ] Yêu cầu xác minh email sau khi đăng ký.
-
-* [ ] **Đăng xuất**
-
-  * [ ] Xây dựng chức năng đăng xuất.
-  * [ ] Xóa thông tin phiên đăng nhập hiện tại.
-  * [ ] Điều hướng người dùng về giao diện đăng nhập.
-
-### 2. Kết nối cơ sở dữ liệu (Server)
-
-* [ ] **Thiết lập cơ sở dữ liệu**
-
-  * [ ] Lựa chọn hệ quản trị cơ sở dữ liệu phù hợp.
-  * [ ] Thiết kế cấu trúc bảng người dùng.
-  * [ ] Xây dựng bảng lưu thông tin tài khoản và vai trò.
-  * [ ] Thiết lập kết nối giữa Server và cơ sở dữ liệu.
-
-* [ ] **Xây dựng API xác thực**
-
-  * [ ] Xây dựng API đăng ký tài khoản.
-  * [ ] Xây dựng API đăng nhập.
-  * [ ] Xây dựng API đăng xuất hoặc quản lý phiên đăng nhập.
-  * [ ] Xây dựng API kiểm tra thông tin tài khoản.
-  * [ ] Xử lý lỗi và trả về kết quả phù hợp cho Client.
-
-* [ ] **Đảm bảo an toàn dữ liệu**
-
-  * [ ] Mã hóa mật khẩu bằng thuật toán băm an toàn.
-  * [ ] Kiểm tra dữ liệu đầu vào tại Server.
-  * [ ] Ngăn chặn việc đăng ký nhiều tài khoản bằng cùng một email.
-  * [ ] Không lưu mật khẩu dạng văn bản thuần trong cơ sở dữ liệu.
-
-### 3. Tích hợp xác minh email khi đăng ký
-
-* [ ] **Gửi mã OTP**
-
-  * [ ] Tạo mã OTP xác minh email.
-  * [ ] Gửi mã OTP đến địa chỉ email người dùng đăng ký.
-  * [ ] Thiết lập thời hạn hiệu lực cho mã OTP.
-  * [ ] Giới hạn số lần yêu cầu gửi lại mã OTP.
-
-* [ ] **Xác minh mã OTP**
-
-  * [ ] Xây dựng giao diện nhập mã OTP.
-  * [ ] Kiểm tra mã OTP người dùng cung cấp.
-  * [ ] Thông báo khi mã OTP không chính xác hoặc đã hết hạn.
-  * [ ] Cho phép người dùng yêu cầu gửi lại mã OTP khi cần.
-
-* [ ] **Hoàn tất đăng ký**
-
-  * [ ] Đánh dấu email đã được xác minh sau khi xác thực thành công.
-  * [ ] Hoàn tất quá trình đăng ký tài khoản.
-  * [ ] Ngăn chặn việc sử dụng các chức năng yêu cầu xác minh email khi tài khoản chưa được xác minh.
-
-### 4. Hoàn thiện quy trình lấy lại mật khẩu
-
-* [ ] **Yêu cầu khôi phục mật khẩu**
-
-  * [ ] Xây dựng giao diện quên mật khẩu.
-  * [ ] Cho phép người dùng nhập email đã đăng ký.
-  * [ ] Kiểm tra yêu cầu khôi phục mật khẩu tại Server.
-  * [ ] Gửi mã OTP hoặc liên kết khôi phục mật khẩu đến email.
-
-* [ ] **Xác minh yêu cầu**
-
-  * [ ] Xây dựng giao diện nhập mã OTP hoặc xác nhận liên kết.
-  * [ ] Kiểm tra mã xác minh và thời hạn hiệu lực.
-  * [ ] Giới hạn số lần thử mã xác minh.
-  * [ ] Cho phép yêu cầu gửi lại mã khi cần.
-
-* [ ] **Đặt lại mật khẩu**
-
-  * [ ] Xây dựng giao diện nhập mật khẩu mới.
-  * [ ] Kiểm tra tính hợp lệ của mật khẩu mới.
-  * [ ] Xác nhận mật khẩu mới và mật khẩu nhập lại trùng khớp.
-  * [ ] Cập nhật mật khẩu mới vào cơ sở dữ liệu sau khi xác minh thành công.
-  * [ ] Thông báo kết quả và điều hướng người dùng về giao diện đăng nhập.
-
-### 5. Cải thiện khả năng tái sử dụng các thành phần giao diện
-
-* [ ] **Chuẩn hóa giao diện**
-
-  * [ ] Xây dựng bộ thành phần giao diện dùng chung.
-  * [ ] Chuẩn hóa kiểu chữ, màu sắc, khoảng cách và kích thước.
-  * [ ] Thống nhất kiểu hiển thị của nút bấm, ô nhập liệu và thông báo.
-
-* [ ] **Tái sử dụng thành phần**
-
-  * [ ] Tạo các thành phần nhập liệu dùng chung.
-  * [ ] Tạo các thành phần nút bấm dùng chung.
-  * [ ] Tái sử dụng các thành phần thông báo lỗi và thông báo thành công.
-  * [ ] Tái sử dụng bố cục chung giữa các màn hình đăng nhập, đăng ký và quên mật khẩu.
-
-* [ ] **Tối ưu cấu trúc giao diện**
-
-  * [ ] Tách biệt bố cục FXML và định dạng CSS.
-  * [ ] Hạn chế lặp lại mã nguồn giữa các màn hình.
-  * [ ] Chuẩn hóa cách chuyển đổi giữa các giao diện.
-  * [ ] Kiểm tra tính nhất quán của giao diện sau khi tái cấu trúc.
-
-### 6. Kiểm thử và hoàn thiện
-
-* [ ] Kiểm thử các trường hợp đăng nhập, đăng ký và đăng xuất.
-* [ ] Kiểm thử xác minh email bằng OTP.
-* [ ] Kiểm thử quy trình lấy lại mật khẩu.
-* [ ] Kiểm thử kết nối giữa Client, Server và cơ sở dữ liệu.
-* [ ] Kiểm tra các trường hợp dữ liệu không hợp lệ và lỗi kết nối.
-* [ ] Cập nhật tài liệu hướng dẫn cài đặt và sử dụng trong README.
+```powershell
+mvn -pl client javafx:run
+```
 
 
+
+## Thử luồng chính
+
+- Đăng ký, xem mã OTP trong **console server** rồi xác minh và đăng nhập. Nếu bật profile `mail`, OTP gửi qua SMTP thay cho console.
+- Khi đăng ký có thể chọn vai trò `BIDDER` hoặc `SELLER`; `ADMIN` được tạo riêng. Cả hai vai trò thường được đăng bán lẫn đặt giá, nhưng không được tự bid sản phẩm của mình.
+- Thêm sản phẩm → admin duyệt → người bán tạo phiên → tài khoản khác đặt giá.
+- Giá, lịch sử, biểu đồ nhận cập nhật realtime. Khi hết hạn, server chọn người thắng từ lượt bid đã lưu.
+- Bid hợp lệ trong 10 giây cuối gia hạn thêm 60 giây, có thể lặp nhiều lần.
+
+Tạo admin đầu tiên: đăng ký và xác minh một tài khoản, rồi chạy trong MySQL (đổi email):
+
+```sql
+UPDATE auction.users SET role = 'ADMIN' WHERE email = 'email-cua-ban@example.com' AND status = 'ACTIVE';
+```
+
+Đăng nhập lại để giao diện nhận vai trò admin. Sau đó mở menu tài khoản → Trang quản trị để duyệt sản phẩm.
+
+## Kiểm thử
+
+```powershell
+mvn test
+```
+
+Test tự động dùng H2 riêng, **không cần MySQL và không tác động database app**. Có test transaction/rollback, quyền, gia hạn, đóng phiên và 100 lượt đặt giá đồng thời.
+
+## Cấu hình tùy chọn
+
+- MySQL local: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`; hoặc `DB_URL` là URL JDBC đầy đủ.
+- Railway: xem [phần cloud](docs/MYSQL.md#mysql-cloud-railway). Chỉ server giữ thông tin MySQL; client gọi API server.
+- SMTP: bật `SPRING_PROFILES_ACTIVE=mail`, điền `MAIL_USER`, `MAIL_PASSWORD`, tùy chọn `MAIL_HOST`, `MAIL_PORT`.
+- Google: bật profile `google`, điền `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`. Nếu dùng cả mail và Google: `SPRING_PROFILES_ACTIVE=mail,google`.
+- Khi dùng ngoài máy cá nhân, đặt `JWT_SECRET` ngẫu nhiên dài ít nhất 32 ký tự.
+
+Không commit file cấu hình chứa mật khẩu. Thông tin bí mật từng đưa lên GitHub cần đổi/thu hồi tại dịch vụ tương ứng; xóa khỏi file hiện tại không xóa lịch sử Git.
