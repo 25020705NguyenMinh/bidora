@@ -29,4 +29,9 @@ public class AdminApiClient extends BaseApiClient {
     public void setHidden(Long id, boolean hidden) throws ApiException {
         call("PUT", "/api/admin/auctions/" + id + "/hidden?value=" + hidden, null, null);
     }
+
+    /** Gọi POST /api/admin/users/{id}/promote để nâng tài khoản lên ADMIN. */
+    public void promoteToAdmin(Long id) throws ApiException {
+        call("POST", "/api/admin/users/" + id + "/promote", null, null);
+    }
 }

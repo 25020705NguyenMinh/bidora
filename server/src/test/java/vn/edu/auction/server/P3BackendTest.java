@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.jpa.hibernate.ddl-auto=create-drop", "spring.jpa.open-in-view=false",
         "spring.security.oauth2.client.registration.google.client-id=p3-test",
         "spring.security.oauth2.client.registration.google.client-secret=p3-test",
-        "MAIL_PASSWORD=p3-test"
+        "MAIL_PASSWORD=p3-test",
 })
 @AutoConfigureMockMvc
 class P3BackendTest {

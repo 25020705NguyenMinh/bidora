@@ -54,4 +54,12 @@ public class AdminController {
     public void hidden(@PathVariable("id") Long id, @RequestParam("value") boolean value) {
         admin.setHidden(id, value);
     }
+
+
+    /** Nâng tài khoản {id} lên ADMIN. Trả 204; 404 nếu không có, 409 nếu đã là admin hoặc chưa ACTIVE. */
+    @PostMapping("/users/{id}/promote")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void promote(@PathVariable("id") Long id, Authentication a) {
+        admin.promoteToAdmin(AuctionPrincipal.userId(a), id);
+    }
 }

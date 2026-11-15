@@ -22,6 +22,8 @@ import vn.edu.auction.shared.dto.ExtraDto.AdminAuctionResponse;
 import vn.edu.auction.shared.dto.ExtraDto.AdminUserResponse;
 import vn.edu.auction.shared.dto.ItemResponse;
 import vn.edu.auction.shared.enums.UserStatus;
+import vn.edu.auction.shared.enums.UserRole;
+
 
 /** Trang quản trị riêng cho ADMIN: (1) tài khoản, (2) sản phẩm chờ duyệt, (3) phiên đấu giá. */
 public final class AdminStage {
@@ -45,6 +47,7 @@ public final class AdminStage {
         UiKit.col(users, "Trạng thái", AdminUserResponse::status);
         Runnable loadUsers = () -> FxAsync.run(api::users, l -> users.getItems().setAll(l),
                 e -> msg.setText(BaseApiClient.describe(e)));
+
         Button toggle = new Button("Vô hiệu hóa / Kích hoạt");
         toggle.setOnAction(e -> {
             AdminUserResponse u = users.getSelectionModel().getSelectedItem();
@@ -52,6 +55,7 @@ public final class AdminStage {
             UserStatus next = u.status() == UserStatus.ACTIVE ? UserStatus.INACTIVE : UserStatus.ACTIVE;
             UiKit.act(msg, () -> { api.setUserStatus(u.id(), next); return Boolean.TRUE; }, loadUsers);
         });
+
         Button delete = new Button("Xóa tài khoản");
         delete.setOnAction(e -> {
             AdminUserResponse u = users.getSelectionModel().getSelectedItem();
@@ -60,6 +64,21 @@ public final class AdminStage {
             a.showAndWait().filter(b -> b == ButtonType.YES)
                     .ifPresent(b -> UiKit.act(msg, () -> { api.deleteUser(u.id()); return Boolean.TRUE; }, loadUsers));
         });
+
+        Button promote = new Button("Nâng lên Admin");
+        promote.setOnAction(e -> {
+            AdminUserResponse u = users.getSelectionModel().getSelectedItem();
+            if (u == null) { msg.setText("Hãy chọn một tài khoản."); return; }
+            // Chặn sớm ở client cho đỡ tốn một request; server vẫn kiểm tra lại (nguồn sự thật)
+            if (u.role() == UserRole.ADMIN) { msg.setText("Tài khoản này đã là quản trị viên."); return; }
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                    "Nâng " + u.email() + " lên ADMIN? Tài khoản này sẽ không còn đặt giá/bán hàng được.",
+                    ButtonType.YES, ButtonType.NO);
+            confirm.showAndWait().filter(b -> b == ButtonType.YES)
+                    .ifPresent(b -> UiKit.act(msg, () -> { api.promoteToAdmin(u.id()); return Boolean.TRUE; }, loadUsers));
+        });
+
+
 
         // ---------- Trang 2: sản phẩm chờ phê duyệt ----------
         TableView<ItemResponse> pending = table();
@@ -75,6 +94,8 @@ public final class AdminStage {
         approve.setOnAction(e -> review(pending, msg, i -> api.approveItem(i.getId()), loadPending));
         reject.setOnAction(e -> review(pending, msg, i -> api.rejectItem(i.getId()), loadPending));
 
+
+        
         // ---------- Trang 3: phiên đang đấu giá ----------
         TableView<AdminAuctionResponse> auctions = table();
         UiKit.col(auctions, "ID", AdminAuctionResponse::id);
@@ -101,7 +122,7 @@ public final class AdminStage {
         });
 
         TabPane tabs = new TabPane(
-                tab("Tài khoản", users, loadUsers, toggle, delete),
+                tab("Tài khoản", users, loadUsers, toggle, delete, promote),
                 tab("Sản phẩm chờ duyệt", pending, loadPending, approve, reject),
                 tab("Phiên đấu giá", auctions, loadAuctions, stop, hide));
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
@@ -149,4 +170,5 @@ public final class AdminStage {
         if (i == null) { msg.setText("Hãy chọn một sản phẩm."); return; }
         UiKit.act(msg, () -> { action.run(i); return Boolean.TRUE; }, reload);
     }
+
 }
