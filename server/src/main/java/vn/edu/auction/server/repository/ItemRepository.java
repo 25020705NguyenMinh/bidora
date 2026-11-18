@@ -6,7 +6,6 @@ import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import vn.edu.auction.server.entity.ItemEntity;
-import vn.edu.auction.shared.enums.AuctionStatus;
 
 public interface ItemRepository extends JpaRepository<ItemEntity, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)

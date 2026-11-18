@@ -1,4 +1,12 @@
-# TECH AUCTION — Nền Tảng Đấu Giá Trực Tuyến Thời Gian Thực
+# Bidora. — Nền Tảng Đấu Giá Trực Tuyến Thời Gian Thực
+
+## Xem thử giao diện trên máy
+
+Ở chế độ kết nối server, khách có thể tìm phiên, xem giá và lịch sử đặt giá. Khi khách bấm **Đặt giá**, Bidora mở đăng nhập và đưa họ về phiên để kiểm tra giá rồi xác nhận.
+
+Từ thư mục gốc của repository, chạy `mvn "-Dmaven.repo.local=../.m2/repository" -pl client "-Djavafx.args=--preview" javafx:run`. Ứng dụng tự mở tài khoản **Tài khoản xem thử** với dữ liệu tạm trong bộ nhớ. Có thể xem danh sách phiên, đặt giá, ví, hồ sơ và chat. Đóng ứng dụng sẽ xóa dữ liệu xem thử. Dải chữ “BẢN XEM THỬ · DỮ LIỆU CỤC BỘ” ở thanh trên cho biết đang dùng chế độ này.
+
+Chế độ xem thử chạy trên `127.0.0.1` và không kết nối TiDB. Để kiểm tra cập nhật giá, thông báo và chat giữa nhiều tài khoản, chạy server thật với database rồi đăng nhập bằng các tài khoản thật.
 
 > **Bài tập lớn môn Lập trình Nâng cao — Nhóm 10**  
 > Hệ thống đấu giá trực tuyến đa người dùng theo kiến trúc Client–Server hiện đại, tích hợp cập nhật giá thời gian thực qua WebSocket, cơ chế chống đặt giá phút chót (Anti-Sniping), ví điện tử nội bộ và quản trị tập trung.
@@ -24,7 +32,7 @@
 
 ## 1. Giới thiệu sản phẩm
 
-**TECH AUCTION** là ứng dụng đấu giá trực tuyến cho phép người dùng niêm yết sản phẩm, tổ chức các phiên đấu giá công khai và tham gia đặt giá cạnh tranh theo thời gian thực. Hệ thống được thiết kế tách biệt rõ ràng thành 3 module độc lập trên nền tảng **Java 21 & Maven Multi-Module**:
+**Bidora.** là ứng dụng đấu giá trực tuyến cho phép người dùng niêm yết sản phẩm, tổ chức các phiên đấu giá công khai và tham gia đặt giá cạnh tranh theo thời gian thực. Hệ thống được thiết kế tách biệt rõ ràng thành 3 module độc lập trên nền tảng **Java 21 & Maven Multi-Module**:
 
 - **`shared`**: Thư viện lõi dùng chung giữa Client và Server, đảm bảo tính nhất quán dữ liệu thông qua hệ thống đối tượng miền (Domain Models), kiểu liệt kê trạng thái (Enums) và các gói truyền tải dữ liệu (DTOs).
 - **`server`**: Dịch vụ Backend xây dựng trên **Spring Boot 3.5**, chịu trách nhiệm xác thực bảo mật, xử lý giao dịch đặt giá đồng thời, tự động đóng phiên theo lịch trình và phát sự kiện thời gian thực.
@@ -94,7 +102,7 @@ flowchart LR
 | **Backend Framework** | Spring Boot (Web, Data JPA, Security, WebSocket, Mail, OAuth2 Client) | 3.5.6 |
 | **Bảo mật & Token** | JJWT (`jjwt-api`, `jjwt-impl`, `jjwt-jackson`), BCrypt | 0.12.6 |
 | **Cơ sở dữ liệu** | MySQL (`mysql-connector-j`), H2 In-Memory (cho Unit/Integration Test) | MySQL 8.4+ |
-| **Giao diện Desktop** | JavaFX (`javafx-controls`, `javafx-fxml`), JSVG | JavaFX 21.0.7, JSVG 1.6.1 |
+| **Giao diện Desktop** | JavaFX (`javafx-controls`, `javafx-fxml`) | JavaFX 21.0.7 |
 | **HTTP & JSON Client** | Java `HttpClient`, Spring Web, Jackson (`jackson-databind`, `jsr310`) | Jackson 2.17.2 |
 | **Đóng gói & Triển khai** | Docker Multi-stage Build (`eclipse-temurin:21`) | JRE 21 |
 
@@ -252,24 +260,15 @@ BaiTapLon-Ltnc-nhom10vip-dev/
         │   │   ├── ItemApiClient.java
         │   │   ├── UserApiClient.java
         │   │   └── UserSocketClient.java
-        │   ├── auction/                                     # Controller & dữ liệu chi tiết phiên
-        │   │   ├── AuctionDetailController.java
-        │   │   ├── AuctionMockData.java
-        │   │   ├── AuctionResultController.java
-        │   │   └── BidHistoryController.java
         │   ├── auth/                                        # Xử lý đăng nhập, đăng ký, OTP
         │   │   ├── AuthController.java
         │   │   └── RegisterData.java
         │   ├── browse/                                      # Khám phá danh sách & chi tiết đấu giá
-        │   │   ├── AuctionDetailController.java
         │   │   ├── AuctionListController.java
         │   │   ├── BrowseController.java
-        │   │   ├── DemoBidHistory.java
         │   │   └── ItemListController.java
         │   ├── controller/                                  # Điều hướng & quản lý vật phẩm
-        │   │   ├── HomeController.java
         │   │   ├── ItemManagementController.java
-        │   │   ├── ItemMock.java
         │   │   └── NavigationController.java
         │   ├── model/                                       # Trạng thái phiên đăng nhập Client
         │   │   └── SessionData.java
@@ -280,8 +279,10 @@ BaiTapLon-Ltnc-nhom10vip-dev/
         │       ├── BellButton.java
         │       ├── BidHistoryChart.java
         │       ├── ChatWindow.java
+        │       ├── MarketCard.java
         │       ├── ProfileDialog.java
         │       ├── UiKit.java
+        │       ├── UiMotion.java
         │       ├── UiTheme.java
         │       ├── UserArea.java
         │       ├── WalletDialog.java
@@ -294,12 +295,7 @@ BaiTapLon-Ltnc-nhom10vip-dev/
             │   ├── browse.css
             │   └── theme.css
             ├── fxml/                                        # Các tệp bố cục giao diện FXML
-            │   ├── home-view.fxml
             │   ├── item-management-view.fxml
-            │   ├── auction/
-            │   │   ├── auction-detail-view.fxml
-            │   │   ├── auction-result-view.fxml
-            │   │   └── bid-history-view.fxml
             │   ├── auth/
             │   │   ├── login-view.fxml
             │   │   ├── otp-verification-view.fxml
@@ -307,13 +303,10 @@ BaiTapLon-Ltnc-nhom10vip-dev/
             │   │   ├── reset-password-view.fxml
             │   │   ├── reset-password2-view.fxml
             │   │   └── signup-method-view.fxml
-            │   ├── browse/
+            │   └── browse/
             │   │   ├── auction-list-view.fxml
             │   │   ├── browse-view.fxml
             │   │   └── item-list-view.fxml
-            │   └── home/
-            │       ├── home-view.fxml
-            │       └── item-management-view.fxml
             ├── i18n/                                        # Gói tài nguyên ngôn ngữ
             │   ├── messages_en.properties
             │   └── messages_vi.properties
@@ -323,5 +316,42 @@ BaiTapLon-Ltnc-nhom10vip-dev/
                 ├── eye-off.svg
                 ├── eye.svg
                 ├── gglogo.png
+                ├── placeholder-*.jpg                      # Ảnh minh họa, xem client/PLACEHOLDER-IMAGES.md
                 ├── linkedIn.png
                 └── linkedIn_circle.png
+```
+
+## 7. Hướng dẫn cài đặt & chạy ứng dụng
+
+Cần JDK 21+ và Maven.
+
+### Chạy backend bằng PowerShell
+
+```powershell
+powershell -NoProfile -ExecutionPolicy RemoteSigned -File .\start-server.ps1
+```
+
+Script dùng các biến đã đặt trong terminal và hỏi những biến còn thiếu. Mật khẩu và khóa được nhập ẩn. Các giá trị nhập qua script chỉ tồn tại trong phiên chạy này. Với đăng nhập Google, thêm `-Google` vào cuối lệnh.
+
+| Biến | Giá trị cần chuẩn bị |
+| --- | --- |
+| `DB_URL` | URL JDBC của MySQL/TiDB. Nhấn Enter để dùng endpoint TiDB đã cấu hình. |
+| `DB_USERNAME`, `DB_PASSWORD` | Tài khoản có quyền dùng database của dự án. |
+| `JWT_SECRET` | Khóa ngẫu nhiên ít nhất 32 byte. Dùng cùng khóa giữa các lần chạy để giữ hiệu lực token. |
+| `MAIL_USER`, `MAIL_PASSWORD` | Địa chỉ Gmail gửi OTP và mật khẩu ứng dụng SMTP. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Thông tin OAuth khi bật profile `google`. |
+| `PORT` | Cổng backend, mặc định `8080`. |
+
+Trên Render, điền các biến này trong **Environment**. Với Google, thêm `SPRING_PROFILES_INCLUDE=google` và đăng ký redirect URI `https://<tên-service>/login/oauth2/code/google` trong Google Cloud.
+
+### Mở client dùng backend trên máy
+
+Mở terminal thứ hai trong thư mục repository. Lần đầu chạy, cài module `shared` vào cache Maven rồi mở client.
+
+```powershell
+$env:AUCTION_SERVER_URL = "http://127.0.0.1:8080"
+mvn "-Dmaven.repo.local=../.m2/repository" -pl shared -am install
+mvn "-Dmaven.repo.local=../.m2/repository" -pl client javafx:run
+```
+
+Khi `AUCTION_SERVER_URL` chưa được đặt, client kết nối Render. Khi dùng `--preview`, client kết nối bản xem thử trong bộ nhớ. Khách có thể xem các phiên mà server công khai. Đặt giá, ví và chat cần tài khoản đăng nhập.

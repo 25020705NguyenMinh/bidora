@@ -35,7 +35,7 @@ public class AuctionService {
 
     public AuctionResponse getAuctionById(Long id) {
         AuctionEntity auction = auctions.findById(id).orElse(null);
-        AuctionRules.require(auction != null, HttpStatus.NOT_FOUND, "Khong tim thay phien dau gia.");
+        AuctionRules.require(auction != null && !auction.isHidden(), HttpStatus.NOT_FOUND, "Khong tim thay phien dau gia.");
         return response(auction);
     }
 

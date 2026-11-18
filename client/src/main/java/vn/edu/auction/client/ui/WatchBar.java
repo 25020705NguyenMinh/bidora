@@ -21,6 +21,8 @@ public final class WatchBar extends HBox {
     private boolean watching;
     private boolean muted;
     private boolean following;
+    private boolean watchBusy;
+    private boolean followBusy;
     private Long sellerId;
 
     public WatchBar(Long auctionId, Long itemId) {
@@ -42,28 +44,42 @@ public final class WatchBar extends HBox {
         muteBtn.setOnAction(e -> pushWatch(true, !muted));
         followBtn.setOnAction(e -> toggleFollow());
 
-        FxAsync.run(() -> api.getWatch(auctionId), s -> { watching = s.watching(); muted = s.muted(); refreshText(); }, e -> { });
+        watchBusy = true;
+        refreshText();
+        FxAsync.run(() -> api.getWatch(auctionId), s -> {
+            watching = s.watching(); muted = s.muted(); watchBusy = false; refreshText();
+        }, e -> { watchBusy = false; refreshText(); error(e); });
         FxAsync.run(() -> new ItemApiClient().getItemById(itemId).getSellerId(), sid -> {
             sellerId = sid;
             if (sid != null && !sid.equals(SessionData.getInstance().getUserId())) {
                 followBtn.setVisible(true);
                 followBtn.setManaged(true);
-                FxAsync.run(() -> api.getFollow(sid), f -> { following = f.following(); refreshText(); }, e -> { });
+                followBusy = true;
+                refreshText();
+                FxAsync.run(() -> api.getFollow(sid), f -> {
+                    following = f.following(); followBusy = false; refreshText();
+                }, e -> { followBusy = false; refreshText(); error(e); });
             }
-        }, e -> { });
+        }, this::error);
     }
 
     private void pushWatch(boolean w, boolean m) {
+        watchBusy = true;
+        refreshText();
         FxAsync.run(() -> api.setWatch(auctionId, w, m),
-                s -> { watching = s.watching(); muted = s.muted(); refreshText(); }, this::error);
+                s -> { watching = s.watching(); muted = s.muted(); watchBusy = false; refreshText(); },
+                e -> { watchBusy = false; refreshText(); error(e); });
     }
 
     private void toggleFollow() {
         boolean target = !following;
+        followBusy = true;
+        refreshText();
         FxAsync.run(() -> {
             if (target) api.follow(sellerId); else api.unfollow(sellerId);
             return target;
-        }, v -> { following = v; refreshText(); }, this::error);
+        }, v -> { following = v; followBusy = false; refreshText(); },
+                e -> { followBusy = false; refreshText(); error(e); });
     }
 
     private void error(Throwable t) {
@@ -71,9 +87,11 @@ public final class WatchBar extends HBox {
     }
 
     private void refreshText() {
-        watchBtn.setText(watching ? "★ Đang theo dõi" : "☆ Theo dõi sản phẩm");
-        muteBtn.setText(muted ? "🔔 Bật thông báo" : "🔕 Tắt thông báo");
-        muteBtn.setDisable(!watching);
-        followBtn.setText(following ? "✓ Đang theo dõi người bán" : "＋ Theo dõi người bán");
+        watchBtn.setText(watchBusy ? "Đang tải…" : watching ? "Đang theo dõi" : "Theo dõi sản phẩm");
+        watchBtn.setDisable(watchBusy);
+        muteBtn.setText(muted ? "Bật thông báo" : "Tắt thông báo");
+        muteBtn.setDisable(watchBusy || !watching);
+        followBtn.setDisable(followBusy);
+        followBtn.setText(following ? "Đang theo dõi người bán" : "Theo dõi người bán");
     }
 }

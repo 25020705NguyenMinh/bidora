@@ -12,8 +12,6 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import vn.edu.auction.shared.dto.BidResponse;
@@ -33,13 +31,9 @@ public final class BidHistoryChart extends VBox {
                 .sorted(Comparator.comparing(BidResponse::getBidTime)
                         .thenComparing(BidResponse::getBidId, Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
-        Label title = new Label("Lịch sử đặt giá");
+        Label title = new Label(demo ? "Lịch sử đặt giá minh họa" : "Lịch sử đặt giá");
         title.getStyleClass().add("history-title");
-        Label badge = new Label(demo ? "MINH HỌA" : accepted.size() + " LƯỢT ĐẶT");
-        badge.getStyleClass().add("badge");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-        getChildren().add(new HBox(8, title, spacer, badge));
+        getChildren().add(title);
         if (accepted.isEmpty()) {
             Label empty = new Label("Chưa có lượt đặt giá nào.");
             empty.getStyleClass().add("history-empty");
@@ -48,11 +42,14 @@ public final class BidHistoryChart extends VBox {
         }
         BigDecimal unit = accepted.get(accepted.size() - 1).getAmount()
                 .compareTo(new BigDecimal("1000000")) >= 0 ? new BigDecimal("1000000") : new BigDecimal("1000");
+        LocalDateTime origin = startTime == null ? accepted.get(0).getBidTime() : startTime;
         NumberAxis timeAxis = new NumberAxis();
         timeAxis.setForceZeroInRange(true);
         timeAxis.setMinorTickVisible(false);
         timeAxis.setTickLabelFormatter(new StringConverter<>() {
-            @Override public String toString(Number value) { return TIME.format(startTime.plusSeconds(value.longValue())); }
+            @Override public String toString(Number value) {
+                return TIME.format(UiKit.toLocal(origin.plusSeconds(value.longValue())));
+            }
             @Override public Number fromString(String value) { throw new UnsupportedOperationException(); }
         });
         NumberAxis priceAxis = new NumberAxis();
@@ -68,9 +65,11 @@ public final class BidHistoryChart extends VBox {
         chart.setVerticalGridLinesVisible(false);
         chart.getStyleClass().add("bid-history-chart");
         XYChart.Series<Number, Number> series = new XYChart.Series<>();
-        addPoint(series, startTime, startTime, startingPrice, unit, "Giá khởi điểm");
+        if (startingPrice != null && startTime != null) {
+            addPoint(series, origin, startTime, startingPrice, unit, "Giá khởi điểm");
+        }
         for (BidResponse bid : accepted) {
-            addPoint(series, startTime, bid.getBidTime(), bid.getAmount(), unit,
+            addPoint(series, origin, bid.getBidTime(), bid.getAmount(), unit,
                     "Người đặt #" + bid.getBidderId());
         }
         chart.getData().add(series);
@@ -86,13 +85,17 @@ public final class BidHistoryChart extends VBox {
         XYChart.Data<Number, Number> point = new XYChart.Data<>(
                 Duration.between(start, time).toMillis() / 1000.0,
                 amount.divide(unit).doubleValue());
-        String money = java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN")).format(amount);
-        String text = title + "\n" + money + " đ\n" + FULL_TIME.format(time);
+        String text = title + "\n" + UiKit.money(amount) + "\n" + FULL_TIME.format(UiKit.toLocal(time));
         point.nodeProperty().addListener((observable, oldNode, node) -> installTooltip(node, text));
         series.getData().add(point);
     }
 
     private void installTooltip(Node node, String text) {
-        if (node != null) Tooltip.install(node, new Tooltip(text));
+        if (node != null) {
+            if (!node.accessibleTextProperty().isBound()) {
+                node.setAccessibleText(text.replace('\n', ' '));
+            }
+            Tooltip.install(node, UiKit.tooltip(text));
+        }
     }
 }

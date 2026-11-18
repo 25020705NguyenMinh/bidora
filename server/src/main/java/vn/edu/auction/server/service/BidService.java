@@ -68,7 +68,7 @@ public class BidService {
     }
 
     public List<BidResponse> getBidHistory(Long auctionId) {
-        AuctionRules.require(auctions.existsById(auctionId), HttpStatus.NOT_FOUND, "Khong tim thay phien dau gia.");
+        AuctionRules.require(auctions.existsByIdAndHiddenFalse(auctionId), HttpStatus.NOT_FOUND, "Khong tim thay phien dau gia.");
         return bids.findByAuctionIdOrderByBidTimeDescIdDesc(auctionId).stream().map(this::response).toList();
     }
 

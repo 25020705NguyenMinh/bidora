@@ -27,10 +27,13 @@ public final class BellButton extends StackPane {
     private Runnable unsub;
 
     public BellButton() {
-        Button bell = new Button("🔔");
+        Button bell = new Button();
+        bell.setGraphic(UiKit.icon("M5 16 H19 L17 13 V9 C17 6 15 4 12 4 C9 4 7 6 7 9 V13 Z M10 19 C11 21 13 21 14 19"));
+        bell.setTooltip(UiKit.tooltip("Thông báo"));
+        bell.setAccessibleText("Thông báo");
         bell.getStyleClass().add("outline-button");
-        badge.setStyle("-fx-background-color:#e53935;-fx-text-fill:white;-fx-background-radius:9;"
-                + "-fx-padding:0 5;-fx-font-size:10;");
+        badge.getStyleClass().add("notification-badge");
+        badge.setVisible(false);
         badge.setMouseTransparent(true);
         StackPane.setAlignment(badge, Pos.TOP_RIGHT);
         getChildren().addAll(bell, badge);
@@ -48,9 +51,12 @@ public final class BellButton extends StackPane {
                 setStyle(n.seen() ? "" : "-fx-font-weight:bold;");
             }
         });
-        VBox box = new VBox(list);
-        box.setStyle("-fx-background-color:white;-fx-border-color:#cccccc;");
+        Label heading = new Label("Thông báo");
+        heading.getStyleClass().add("notification-title");
+        VBox box = new VBox(10, heading, list);
+        box.getStyleClass().add("notification-panel");
         popup.getContent().add(box);
+        UiTheme.apply(popup.getScene());
         popup.setAutoHide(true);
         popup.setOnHidden(e -> markAllSeen());
 
@@ -58,10 +64,12 @@ public final class BellButton extends StackPane {
             if (popup.isShowing()) { popup.hide(); return; }
             Bounds b = bell.localToScreen(bell.getBoundsInLocal());
             popup.show(bell, b.getMaxX() - 340, b.getMaxY() + 4);
+            UiMotion.enter(box);
         });
 
         reload();
-        unsub = UserSocketClient.getInstance().subscribe(this::onSocket);
+        if (!vn.edu.auction.client.model.SessionData.getInstance().isPreviewMode())
+            unsub = UserSocketClient.getInstance().subscribe(this::onSocket);
         sceneProperty().addListener((o, old, sc) -> {
             if (sc == null && unsub != null) { unsub.run(); unsub = null; }
         });

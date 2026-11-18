@@ -95,7 +95,9 @@ public class SocialService {
         if (item == null) return;
         Set<Long> targets = new HashSet<>();
         watches.findByAuctionIdAndMutedFalse(a.getId()).forEach(w -> targets.add(w.userId));
-        targets.add(item.getSellerId());
+        boolean sellerMuted = watches.findByUserIdAndAuctionId(item.getSellerId(), a.getId())
+                .map(w -> w.muted).orElse(false);
+        if (!sellerMuted) targets.add(item.getSellerId());
         targets.forEach(uid -> notify(uid, "AUCTION_ENDED", "Phiên \"" + item.getName() + "\" " + text, a.getId()));
     }
 

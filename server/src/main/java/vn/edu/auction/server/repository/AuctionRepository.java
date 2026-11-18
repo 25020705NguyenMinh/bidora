@@ -14,6 +14,7 @@ public interface AuctionRepository extends JpaRepository<AuctionEntity, Long> {
     Optional<AuctionEntity> findByIdForUpdate(@Param("id") Long id);
 
     boolean existsByItemId(Long itemId);
+    boolean existsByIdAndHiddenFalse(Long id);
     List<AuctionEntity> findByStatus(AuctionStatus status);
 
     @Query("select a.id from AuctionEntity a where a.status in :statuses and a.endTime <= :now")

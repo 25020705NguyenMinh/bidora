@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
         "spring.datasource.password=",
         "spring.jpa.hibernate.ddl-auto=create-drop",
 })
+@org.springframework.test.context.ActiveProfiles("test")
 class BidServiceTest {
 
     @Autowired

@@ -20,7 +20,6 @@ import java.time.Duration;
  */
 public class AuthApiClient {
 
-    private static final String DEFAULT_BASE_URL = "https://baitaplon-ltnc-nhom10vip.onrender.com";
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
@@ -29,7 +28,7 @@ public class AuthApiClient {
     private final String baseUrl;
 
     public AuthApiClient() {
-        this(System.getProperty("auction.server.url", DEFAULT_BASE_URL));
+        this(BaseApiClient.serverUrl());
     }
 
     public AuthApiClient(String baseUrl) {

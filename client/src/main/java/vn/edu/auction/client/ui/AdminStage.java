@@ -57,6 +57,7 @@ public final class AdminStage {
         });
 
         Button delete = new Button("Xóa tài khoản");
+        delete.getStyleClass().add("danger-button");
         delete.setOnAction(e -> {
             AdminUserResponse u = users.getSelectionModel().getSelectedItem();
             if (u == null) { msg.setText("Hãy chọn một tài khoản."); return; }
@@ -90,6 +91,7 @@ public final class AdminStage {
         Runnable loadPending = () -> FxAsync.run(api::pendingItems, l -> pending.getItems().setAll(l),
                 e -> msg.setText(BaseApiClient.describe(e)));
         Button approve = new Button("Duyệt");
+        approve.getStyleClass().add("primary-button");
         Button reject = new Button("Từ chối");
         approve.setOnAction(e -> review(pending, msg, i -> api.approveItem(i.getId()), loadPending));
         reject.setOnAction(e -> review(pending, msg, i -> api.rejectItem(i.getId()), loadPending));
@@ -109,6 +111,7 @@ public final class AdminStage {
         Runnable loadAuctions = () -> FxAsync.run(api::auctions, l -> auctions.getItems().setAll(l),
                 e -> msg.setText(BaseApiClient.describe(e)));
         Button stop = new Button("Dừng đấu giá");
+        stop.getStyleClass().add("danger-button");
         Button hide = new Button("Ẩn / Hiện phiên");
         stop.setOnAction(e -> {
             AdminAuctionResponse a = auctions.getSelectionModel().getSelectedItem();
@@ -127,9 +130,13 @@ public final class AdminStage {
                 tab("Phiên đấu giá", auctions, loadAuctions, stop, hide));
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
-        VBox root = new VBox(6, tabs, msg);
+        Label title = new Label("Không gian quản trị");
+        title.getStyleClass().add("screen-title");
+        Label subtitle = new Label("Quản lý tài khoản, sản phẩm và phiên đấu giá");
+        subtitle.getStyleClass().add("muted");
+        VBox root = new VBox(10, title, subtitle, tabs, msg);
         VBox.setVgrow(tabs, Priority.ALWAYS);
-        root.setPadding(new Insets(8));
+        root.setPadding(new Insets(22));
 
         stage = new Stage();
         stage.initOwner(owner);

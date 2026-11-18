@@ -1,21 +1,16 @@
 package vn.edu.auction.client.auth;
 
 
-import com.github.weisj.jsvg.SVGDocument;
-import com.github.weisj.jsvg.parser.SVGLoader;
-import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -31,10 +26,6 @@ import vn.edu.auction.shared.dto.LoginRequest;
 import vn.edu.auction.shared.dto.RegisterRequest;
 import vn.edu.auction.shared.enums.UserRole;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.concurrent.Callable;
@@ -98,16 +89,14 @@ public class AuthController {
 
     // ---- SỬA: cấu hình chuyển trang ----
     // Thư mục chứa các file FXML của phần auth (tính từ /vn/edu/auction/client/)
-    private static final String VIEW_DIR = "fxml/auth/";
-    // Đường dẫn CSS (Navigator đang tìm sai chỗ nên controller tự gắn)
-    private static final String AUTH_CSS = "/vn/edu/auction/client/css/auth.css";
+    private static final String VIEW_DIR = "/vn/edu/auction/client/fxml/auth/";
 
     // Nhớ trang hiện tại để đổi ngôn ngữ thì load lại đúng trang.
     // Mặc định là login vì Main mở trang login đầu tiên.
-    private static String currentFxml = "login-view.fxml";
-    private static String currentTitleKey = "title.login";
-    // [3] Màu chữ thông báo thành công (mặc định messageLabel màu đỏ trong CSS)
-    private static final String SUCCESS_STYLE = "-fx-text-fill: #16a34a;";
+    private String currentFxml = "login-view.fxml";
+    private String currentTitleKey = "title.login";
+    private boolean busy;
+    private int resendSecondsLeft;
 
     // [3] Dùng System.Logger để ghi chi tiết lỗi ra CONSOLE cho lập trình viên,
     // còn giao diện chỉ hiện câu thông báo dễ hiểu (không hiện stack trace).
@@ -125,6 +114,8 @@ public class AuthController {
     public void initialize() {
         if (messageLabel != null) {
             messageLabel.setText("");
+            messageLabel.visibleProperty().bind(messageLabel.textProperty().isNotEmpty());
+            messageLabel.managedProperty().bind(messageLabel.visibleProperty());
         }
 
         setupLanguageComboBox();
@@ -153,7 +144,12 @@ public class AuthController {
                     (obs, oldValue, newValue) -> clearFieldError(passwordError, passwordContainer));
         }
         if (togglePasswordButton != null) {
-            togglePasswordButton.setGraphic(loadSvgIcon("eye.svg"));
+            togglePasswordButton.setGraphic(passwordIcon(false));
+            togglePasswordButton.setAccessibleText(I18n.get("password.show"));
+        }
+        if (confirmPasswordField != null) {
+            confirmPasswordField.textProperty().addListener((obs, oldValue, newValue) ->
+                    clearFieldError(confirmPasswordError, confirmPasswordField));
         }
 
         if (firstNameField != null) {
@@ -193,9 +189,17 @@ public class AuthController {
 
         I18n.setLocale(selected);
 
-        // SỬA: không dùng Navigator.reload() nữa (trang login do Main mở nên
-        // Navigator chưa biết trang hiện tại). Tự load lại trang đang đứng.
-        Platform.runLater(() -> switchView(currentFxml, currentTitleKey));
+        AuthController next = switchView(currentFxml, currentTitleKey);
+        if (next == null) return;
+        if (emailField != null) next.emailField.setText(emailField.getText());
+        if (passwordField != null) next.passwordField.setText(passwordField.getText());
+        if (firstNameField != null) next.firstNameField.setText(firstNameField.getText());
+        if (lastNameField != null) next.lastNameField.setText(lastNameField.getText());
+        if (roleComboBox != null) next.roleComboBox.setValue(roleComboBox.getValue());
+        if (otpBoxes != null) {
+            for (int i = 0; i < otpBoxes.length; i++) next.otpBoxes[i].setText(otpBoxes[i].getText());
+            next.startResendCountdown(resendSecondsLeft);
+        }
     }
 
     // ====================================================================
@@ -203,6 +207,7 @@ public class AuthController {
     // ====================================================================
     @FXML
     private void handleLogin() {
+        if (busy) return;
         showMessage("");
 
         boolean emailOk = validateEmail();
@@ -259,7 +264,7 @@ public class AuthController {
         startLocalCallbackServer();
 
         // 2. Mở trình duyệt gọi lên Spring Boot Server
-        String googleAuthUrl = "https://baitaplon-ltnc-nhom10vip.onrender.com/oauth2/authorization/google";
+        String googleAuthUrl = vn.edu.auction.client.api.BaseApiClient.serverUrl() + "/oauth2/authorization/google";
         openOAuthBrowser(googleAuthUrl);
     }
 
@@ -296,7 +301,7 @@ public class AuthController {
                     String htmlResponse = "<html><head><title>Thành công</title></head>"
                             + "<body style='text-align:center; padding-top:50px; font-family:Arial;'>"
                             + "<h2 style='color:#4CAF50;'>Đăng nhập thành công!</h2>"
-                            + "<p>Bạn có thể đóng cửa sổ này và quay lại ứng dụng Tech Auction.</p>"
+                            + "<p>Bạn có thể đóng cửa sổ này và quay lại ứng dụng Bidora.</p>"
                             + "</body></html>";
 
                     byte[] responseBytes = htmlResponse.getBytes(java.nio.charset.StandardCharsets.UTF_8);
@@ -396,6 +401,7 @@ public class AuthController {
 
     @FXML
     private void handleRegister() {
+        if (busy) return;
         showMessage("");
 
         boolean firstOk = validateRequired(firstNameField, firstNameError, "error.firstName.empty");
@@ -454,8 +460,10 @@ public class AuthController {
     // 6. GỌI API Ở LUỒNG NỀN  [MỚI]
     // ====================================================================
     private <T> void runAsync(Callable<T> apiCall, Consumer<T> onSuccess) {
-        setBusy(true);
+        if (busy) return;
         showMessage(I18n.get("message.loading"));
+        messageLabel.getStyleClass().add("pending");
+        setBusy(true);
 
         Task<T> task = new Task<>() {
             @Override
@@ -466,6 +474,8 @@ public class AuthController {
 
         task.setOnSucceeded(e -> {
             setBusy(false);
+            Stage stage = findStage();
+            if (stage == null || !stage.isShowing()) return;
             showMessage("");
             onSuccess.accept(task.getValue());
         });
@@ -481,6 +491,10 @@ public class AuthController {
     }
 
     private void setBusy(boolean busy) {
+        this.busy = busy;
+        if (languageComboBox != null) languageComboBox.setDisable(busy);
+        if (submitButton != null) submitButton.setDisable(busy);
+        if (resendLink != null) resendLink.setDisable(busy || resendSecondsLeft > 0);
         if (loginButton != null) {
             loginButton.setDisable(busy);
         }
@@ -517,6 +531,7 @@ public class AuthController {
     // ====================================================================
     @FXML
     private void handleConfirmReset() {
+        if (busy) return;
         showMessage("");
         if (!validateEmail()) return;
 
@@ -532,6 +547,7 @@ public class AuthController {
     }
     @FXML
     private void handleResetPasswordSubmit() {
+        if (busy) return;
         showMessage("");
         boolean passOk = validatePassword(true);
         String newPassword = passwordField.getText();
@@ -539,7 +555,7 @@ public class AuthController {
 
         if (!passOk) return;
         if (!newPassword.equals(confirmPassword)) {
-            showFieldError(confirmPasswordError, confirmPasswordField, "Mật khẩu xác nhận không khớp");
+            showFieldError(confirmPasswordError, confirmPasswordField, I18n.get("error.password.mismatch"));
             return;
         }
 
@@ -549,13 +565,14 @@ public class AuthController {
         // Gọi API gửi Email + OTP + Pass mới lên Server để cập nhật DB
         runAsync(() -> AUTH_API.resetPassword(email, otp, newPassword), response -> {
             RegisterData.reset();
-            openLoginView(); // Hoàn tất -> Về màn hình Login
-            showSuccess(response.getMessage());
+            AuthController login = switchView("login-view.fxml", "title.login");
+            if (login != null) login.showSuccess(response.getMessage());
         });
     }
     /** Nút Tiếp tục trên màn hình OTP (khớp onAction="#onContinue" trong FXML). */
     @FXML
     private void onContinue() {
+        if (busy) return;
         showMessage("");
         String code = getOtpCode();
         if (code.length() != 6) {
@@ -604,29 +621,24 @@ public class AuthController {
         switchView("reset-password-view.fxml", "title.reset");
     }
 
-    private void switchView(String fxmlFile, String titleKey) {
+    private AuthController switchView(String fxmlFile, String titleKey) {
         try {
             Stage stage = findStage();
             if (stage == null) {
                 throw new IOException("Không tìm thấy cửa sổ hiện tại");
             }
-            Navigator.setStage(stage);
-
-            // Mở trang FXML mới
-            Navigator.show(VIEW_DIR + fxmlFile, titleKey);
-            applyAuthCss(stage.getScene());
-            currentFxml = fxmlFile;
-            currentTitleKey = titleKey;
-
-            // ===== THÊM ĐOẠN NÀY ĐỂ MỞ RỘNG CỬA SỔ THEO NỘI DUNG MỚI =====
-            Platform.runLater(() -> {
-                stage.sizeToScene(); // Tự động dãn cửa sổ theo FXML mới
-                stage.centerOnScreen(); // Căn giữa màn hình
-            });
-
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(VIEW_DIR + fxmlFile), I18n.getBundle());
+            stage.getScene().setRoot(loader.load());
+            stage.setTitle(I18n.get(titleKey));
+            AuthController next = loader.getController();
+            next.currentFxml = fxmlFile;
+            next.currentTitleKey = titleKey;
+            if (resendTimer != null) resendTimer.stop();
+            return next;
         } catch (IOException e) {
             LOG.log(System.Logger.Level.ERROR, "Không mở được màn hình " + fxmlFile, e);
             showMessage(I18n.get("error.openView"));
+            return null;
         }
     }
 
@@ -647,17 +659,6 @@ public class AuthController {
         return null;
     }
 
-    private void applyAuthCss(Scene scene) {
-        if (scene == null) {
-            return;
-        }
-        var css = getClass().getResource(AUTH_CSS);
-        if (css != null && !scene.getStylesheets().contains(css.toExternalForm())) {
-            scene.getStylesheets().add(css.toExternalForm());
-            vn.edu.auction.client.ui.UiTheme.apply(scene);
-        }
-    }
-
     // ====================================================================
     // 8. ẨN / HIỆN MẬT KHẨU
     // ====================================================================
@@ -671,7 +672,8 @@ public class AuthController {
         passwordVisibleField.setVisible(passwordVisible);
         passwordVisibleField.setManaged(passwordVisible);
 
-        togglePasswordButton.setGraphic(loadSvgIcon(passwordVisible ? "eye-off.svg" : "eye.svg"));
+        togglePasswordButton.setGraphic(passwordIcon(passwordVisible));
+        togglePasswordButton.setAccessibleText(I18n.get(passwordVisible ? "password.hide" : "password.show"));
 
         TextField shown = passwordVisible ? passwordVisibleField : passwordField;
         shown.requestFocus();
@@ -726,6 +728,7 @@ public class AuthController {
         }
         if (field != null && !field.getStyleClass().contains("input-error")) {
             field.getStyleClass().add("input-error");
+            vn.edu.auction.client.ui.UiMotion.error(field);
         }
     }
 
@@ -743,7 +746,7 @@ public class AuthController {
     // [SỬA] Thông báo lỗi: trả về kiểu mặc định (đỏ theo CSS)
     private void showMessage(String message) {
         if (messageLabel != null) {
-            messageLabel.setStyle("");
+            messageLabel.getStyleClass().removeAll("pending", "success");
             messageLabel.setText(message);
         }
     }
@@ -751,8 +754,8 @@ public class AuthController {
     // [MỚI] Thông báo thành công: đổi sang màu xanh lá
     private void showSuccess(String message) {
         if (messageLabel != null) {
-            messageLabel.setStyle(SUCCESS_STYLE);
-            messageLabel.setText(message);
+            showMessage(message);
+            messageLabel.getStyleClass().add("success");
         }
     }
     // ====================================================================
@@ -853,6 +856,7 @@ public class AuthController {
     /** Link "Gửi mã mới". */
     @FXML
     private void onResend() {
+        if (busy) return;
         showMessage("");
         String email = RegisterData.email;
 
@@ -886,18 +890,23 @@ public class AuthController {
             resendTimer.stop();
         }
 
-        int[] remaining = {seconds};
-        resendLink.setDisable(true);
-        countdownLabel.setText(String.format(I18n.get("otp.resend.in"), remaining[0]));
+        resendSecondsLeft = seconds;
+        resendLink.setDisable(seconds > 0 || busy);
+        countdownLabel.setText(seconds == 0 ? "" : String.format(I18n.get("otp.resend.in"), seconds));
+        if (seconds == 0) return;
 
         resendTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
-            remaining[0]--;
-            if (remaining[0] <= 0) {
+            Stage stage = findStage();
+            if (stage == null || !stage.isShowing()) {
                 resendTimer.stop();
-                resendLink.setDisable(false);
+                return;
+            }
+            if (--resendSecondsLeft <= 0) {
+                resendTimer.stop();
+                resendLink.setDisable(busy);
                 countdownLabel.setText("");
             } else {
-                countdownLabel.setText(String.format(I18n.get("otp.resend.in"), remaining[0]));
+                countdownLabel.setText(String.format(I18n.get("otp.resend.in"), resendSecondsLeft));
             }
         }));
         resendTimer.setCycleCount(Timeline.INDEFINITE);
@@ -916,41 +925,10 @@ public class AuthController {
     // ====================================================================
     // 10. TẢI ICON SVG
     // ====================================================================
-    private ImageView loadSvgIcon(String fileName) {
-        try {
-            var url = getClass().getResource("/vn/edu/auction/client/icons/" + fileName);
-
-            if (url == null) {
-                throw new IllegalArgumentException("Không tìm thấy icon: " + fileName);
-            }
-
-            SVGDocument document = new SVGLoader().load(url);
-            var size = document.size();
-
-            BufferedImage image = new BufferedImage(
-                    Math.max(1, (int) size.width),
-                    Math.max(1, (int) size.height),
-                    BufferedImage.TYPE_INT_ARGB
-            );
-
-            var graphics = image.createGraphics();
-            document.render(null, graphics);
-            graphics.dispose();
-
-            ByteArrayOutputStream output = new ByteArrayOutputStream();
-            ImageIO.write(image, "png", output);
-
-            ImageView icon = new ImageView(
-                    new Image(new ByteArrayInputStream(output.toByteArray()))
-            );
-
-            icon.setFitWidth(18);
-            icon.setFitHeight(18);
-            return icon;
-
-        } catch (Exception e) {
-            throw new RuntimeException("Không thể tải icon SVG: " + fileName, e);
-        }
+    private Node passwordIcon(boolean visible) {
+        String eye = "M2 12 C4 8 7 6 12 6 C17 6 20 8 22 12 C20 16 17 18 12 18 C7 18 4 16 2 12 Z "
+                + "M15 12 A3 3 0 1 1 9 12 A3 3 0 1 1 15 12";
+        return vn.edu.auction.client.ui.UiKit.icon(visible ? eye + " M3 3 L21 21" : eye);
     }
 
 }

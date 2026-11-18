@@ -16,6 +16,7 @@ public class SessionData {
     private String email;
     private UserRole role; 
     private String token;
+    private boolean previewMode;
 
     // singleton pattern
     private SessionData() {}
@@ -46,6 +47,22 @@ public class SessionData {
         this.role = response.getRole();
         this.token = response.getToken();
     }
+
+    public void enablePreview() {
+        previewMode = true;
+        enterPreview();
+    }
+
+    public void enterPreview() {
+        if (!previewMode) throw new IllegalStateException("Preview is not enabled");
+        userId = 1L;
+        fullName = "Tài khoản xem thử";
+        email = "preview@bidora.local";
+        role = UserRole.BIDDER;
+        token = "local-preview";
+    }
+
+    public boolean isPreviewMode() { return previewMode; }
 
     /**
      * Xóa sạch thông tin session khi người dùng đăng xuất.

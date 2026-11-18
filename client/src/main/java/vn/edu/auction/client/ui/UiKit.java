@@ -13,12 +13,34 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.Tooltip;
+import javafx.scene.shape.SVGPath;
+import javafx.scene.paint.Color;
 import vn.edu.auction.client.api.BaseApiClient;
 import vn.edu.auction.client.api.FxAsync;
 
 /** Tiện ích giao diện dùng chung. */
 public final class UiKit {
     private UiKit() {}
+
+    public static Tooltip tooltip(String text) {
+        Tooltip tip = new Tooltip(text);
+        tip.setShowDelay(javafx.util.Duration.millis(200));
+        tip.setHideDelay(javafx.util.Duration.millis(120));
+        return tip;
+    }
+
+    public static SVGPath icon(String path) {
+        SVGPath icon = new SVGPath();
+        icon.setContent(path);
+        icon.setFill(Color.TRANSPARENT);
+        icon.setStroke(Color.web("#343d50"));
+        icon.getStyleClass().add("line-icon");
+        icon.setStrokeWidth(1.7);
+        icon.setStrokeLineCap(javafx.scene.shape.StrokeLineCap.ROUND);
+        icon.setStrokeLineJoin(javafx.scene.shape.StrokeLineJoin.ROUND);
+        return icon;
+    }
 
     private static final DateTimeFormatter DT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final DateTimeFormatter DT_SEC = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
@@ -47,6 +69,8 @@ public final class UiKit {
 
     /** Gọi API ở nền; thành công thì chạy reload, lỗi thì hiện câu dễ hiểu lên label. */
     public static void act(Label msg, Callable<?> call, Runnable reload) {
-        FxAsync.run(call, r -> { msg.setText(""); reload.run(); }, e -> msg.setText(BaseApiClient.describe(e)));
+        FxAsync.run(call, r -> { msg.setText(""); reload.run(); }, e -> {
+            msg.setText(BaseApiClient.describe(e)); UiMotion.error(msg);
+        });
     }
 }

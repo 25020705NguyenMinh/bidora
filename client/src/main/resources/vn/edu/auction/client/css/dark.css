@@ -1,0 +1,76 @@
+/* Dark surfaces preserve the same pastel accents and readable contrast. */
+.root, .dialog-pane {
+    -fx-base: #262937; -fx-background-color: #181a23; -fx-control-inner-background: #282b38;
+    -fx-text-background-color: #eff0f5; -fx-text-fill: #eff0f5;
+    -fx-accent: #b9baf0; -fx-focus-color: #b9baf0; -fx-faint-focus-color: #b9baf033;
+}
+.label { -fx-text-fill: #eff0f5; }
+.market-shell, .market-scroll, .market-scroll > .viewport { -fx-background-color: #181a23; }
+.market-nav { -fx-background-color: #20222c; -fx-border-color: transparent transparent #343642 transparent; }
+.market-brand, .market-footer-brand, .section-title, .screen-title, .management-title { -fx-text-fill: #f2f1f5; }
+.market-brand-sub, .section-note, .section-subtitle, .muted, .catalog-message, .message-label { -fx-text-fill: #b4b7c5; }
+.feature { -fx-background-color: #303248; }
+.feature-title { -fx-text-fill: #f5f3f8; }
+.feature-description, .feature-footnote { -fx-text-fill: #c2c4d4; }
+.feature-kicker, .section-kicker, .listing-status { -fx-text-fill: #c6c7f4; }
+.button, .menu-button { -fx-background-color: #343645; -fx-border-color: transparent; -fx-text-fill: #edeef5; }
+.button:hover, .menu-button:hover { -fx-background-color: #424456; }
+.button.primary-button, .button.full-width-button { -fx-background-color: #c4c4f2; -fx-border-color: transparent; -fx-text-fill: #202342; }
+.button.primary-button:hover, .button.full-width-button:hover { -fx-background-color: #dad9fa; }
+.button.nav-link, .button.theme-switch, .button.nav-sell, .market-nav .outline-button { -fx-background-color: transparent; -fx-text-fill: #d5d5e2; }
+.button.nav-link:hover, .button.theme-switch:hover, .button.nav-sell:hover, .market-nav .outline-button:hover { -fx-background-color: #353746; -fx-text-fill: white; }
+.line-icon { -fx-stroke: #d5d5e2; }
+.text-input, .input-field { -fx-background-color: #30323f; -fx-border-color: transparent; -fx-text-fill: #f0eff4; -fx-prompt-text-fill: #a5a7b6; }
+.text-input:focused { -fx-border-color: #b9baf0; }
+.password-container { -fx-background-color: #30323f; -fx-border-color: transparent; }
+.password-container .text-input { -fx-background-color: transparent; }
+.market-tabs, .market-tabs .tab-header-background, .catalog-scroll, .catalog-scroll > .viewport { -fx-background-color: transparent; }
+.market-tabs .tab { -fx-border-color: transparent transparent #484a58 transparent; }
+.market-tabs .tab:selected { -fx-border-color: transparent transparent #c4c4f2 transparent; }
+.market-tabs .tab-label { -fx-text-fill: #aeb0bf; }
+.market-tabs .tab:selected .tab-label { -fx-text-fill: #dbdafa; }
+.listing-card, .management-panel { -fx-background-color: #262832; -fx-border-color: #363844; }
+.listing-title, .listing-price { -fx-text-fill: #f2f1f5; }
+.listing-caption, .listing-secondary { -fx-text-fill: #b4b7c5; }
+.listing-skeleton-image { -fx-background-color: #343744; }
+.button.listing-action { -fx-background-color: transparent; -fx-text-fill: #cbcafa; }
+.button.listing-action:hover { -fx-background-color: transparent; -fx-text-fill: #f1efff; }
+.badge { -fx-background-color: #3e405c; -fx-text-fill: #e1dfff; }
+.market-footer { -fx-border-color: #3a3c49 transparent transparent transparent; }
+.table-view { -fx-background-color: #262832; -fx-border-color: #41434f; }
+.table-view .column-header, .table-view .column-header-background, .table-view .filler { -fx-background-color: #343642; }
+.table-view .column-header .label { -fx-text-fill: #d0d0dc; }
+.table-row-cell { -fx-background-color: #262832; -fx-border-color: transparent transparent #343641 transparent; }
+.table-row-cell:filled:hover { -fx-background-color: #343644; }
+.table-row-cell:filled:selected { -fx-background-color: #464968; }
+.table-row-cell:filled:selected .text { -fx-fill: white; }
+.table-cell { -fx-text-fill: #e8e8ee; }
+.auth-root, .auth-form { -fx-background-color: #22242e; }
+.auth-wordmark, .auth-heading-title, .auth-root .app-title, .auth-root .otp-title { -fx-text-fill: #f2f1f5; }
+.auth-heading-copy, .auth-root .subtitle, .auth-root .footer-text, .otp-description, .choice-desc { -fx-text-fill: #b7b9c8; }
+.auth-root .field-label, .field-label, .input-label { -fx-text-fill: #e0e0e9; }
+.auth-root .language-combo, .combo-box { -fx-background-color: #353744; -fx-border-color: transparent; }
+.combo-box .list-cell { -fx-background-color: #353744; -fx-text-fill: #eeeeF4; }
+.combo-box-popup .list-view { -fx-background-color: #353744; }
+.combo-box-popup .list-cell:hover { -fx-background-color: #4a4d60; }
+.field-error, .error-label, .auth-root .message-label { -fx-text-fill: #ffb4a9; }
+.hyperlink, .auth-link { -fx-text-fill: #c8c7fa; }
+.button.auth-social { -fx-background-color: #353744; -fx-border-color: transparent; -fx-text-fill: #ededf4; }
+.button.auth-social:hover { -fx-background-color: #444655; }
+.auction-dialog { -fx-background-color: #252730; }
+.auction-dialog > .header-panel { -fx-background-color: #33354c; }
+.auction-dialog > .button-bar { -fx-background-color: #20222b; }
+.detail-scroll, .detail-scroll > .viewport { -fx-background-color: #252730; }
+.detail-price { -fx-text-fill: #d5d3ff; }
+.detail-caption, .detail-note { -fx-text-fill: #b7b9c8; }
+.detail-meta, .history-panel { -fx-background-color: #30323f; -fx-border-color: #484a58; }
+.bid-history-chart .chart-plot-background { -fx-background-color: #30323f; }
+.bid-history-chart .chart-series-line { -fx-stroke: #bcbcf0; }
+.chat-header { -fx-text-fill: #f2f1f5; }
+.chat-subtitle { -fx-text-fill: #b7b9c8; }
+.chat-list { -fx-background-color: #1d1f28; }
+.chat-bubble { -fx-background-color: #393b49; -fx-text-fill: #f2f1f5; }
+.chat-bubble-own { -fx-background-color: #bbbbed; -fx-text-fill: #202342; }
+.notification-panel { -fx-background-color: #282a35; -fx-border-color: #4b4d59; }
+.notification-title { -fx-text-fill: #f2f1f5; }
+.preview-notice { -fx-text-fill: #cdc9f4; }

@@ -180,6 +180,6 @@ public class ItemManagementController {
 
     @FXML
     public void handleBackToHome() {
-        NavigationController.showHome();
+        NavigationController.showBrowse();
     }
 }

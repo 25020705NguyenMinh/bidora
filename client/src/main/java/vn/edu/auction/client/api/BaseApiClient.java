@@ -22,7 +22,9 @@ import vn.edu.auction.client.model.SessionData;
 
  */
 public abstract class BaseApiClient {
-    protected static final String BASE_URL = trimSlash(System.getProperty("auction.server.url", "https://baitaplon-ltnc-nhom10vip.onrender.com"));
+    protected static final String BASE_URL = trimSlash(System.getProperty("auction.server.url",
+            System.getenv().getOrDefault("AUCTION_SERVER_URL", "https://baitaplon-ltnc-nhom10vip.onrender.com")));
+    public static String serverUrl() { return BASE_URL; }
     protected static final HttpClient HTTP = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(5)).build();

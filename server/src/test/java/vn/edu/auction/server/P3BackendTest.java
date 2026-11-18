@@ -44,6 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "MAIL_PASSWORD=p3-test",
 })
 @AutoConfigureMockMvc
+@org.springframework.test.context.ActiveProfiles("test")
 class P3BackendTest {
     @SpringBootConfiguration
     @EnableAutoConfiguration
@@ -295,6 +296,24 @@ class P3BackendTest {
         assertEquals(accepted.get(), collector.events.size());
         List<BidResponse> history = bidService.getBidHistory(auction.getId());
         assertEquals(result.getCurrentPrice(), history.get(0).getAmount());
+    }
+
+    @Test void guestCanReadVisibleAuctionsButCannotBidOrReadHiddenAuctions() throws Exception {
+        AuctionResponse auction = auction(300);
+        String url = "/api/auctions/" + auction.getId();
+        mvc.perform(get("/api/auctions")).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(auction.getId()));
+        mvc.perform(get(url)).andExpect(status().isOk());
+        mvc.perform(get(url + "/bids")).andExpect(status().isOk());
+        mvc.perform(post(url + "/bids").contentType("application/json").content("{\"amount\":200}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get(url + "/watch")).andExpect(status().isUnauthorized());
+        var hidden = auctions.findById(auction.getId()).orElseThrow();
+        hidden.setHidden(true);
+        auctions.saveAndFlush(hidden);
+        mvc.perform(get("/api/auctions")).andExpect(jsonPath("$").isEmpty());
+        mvc.perform(get(url)).andExpect(status().isNotFound());
+        mvc.perform(get(url + "/bids")).andExpect(status().isNotFound());
     }
 
     @Test void apiUsesJwtIdentityAndKeepsExistingGuestRestriction() throws Exception {

@@ -39,7 +39,7 @@ public class MailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
         message.setTo(to);
-        message.setSubject("[Tech Auction] Mã xác minh của bạn");
+        message.setSubject("[Bidora.] Mã xác minh của bạn");
         message.setText("Mã xác minh của bạn là: " + code
                 + "\n\nMã có hiệu lực trong " + expirationMinutes + " phút."
                 + "\nNếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.");

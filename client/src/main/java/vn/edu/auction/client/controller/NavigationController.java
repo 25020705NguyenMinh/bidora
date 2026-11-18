@@ -55,20 +55,18 @@ public class NavigationController {
      * Chuyển sang màn hình Trang chủ[cite: 2].
      */
     public static void showHome() {
-        showView("/vn/edu/auction/client/fxml/home-view.fxml", "Trang Chủ - Hệ Thống Đấu Giá");
+        showBrowse();
     }
 
     public static void showBrowse() {
-        showView("/vn/edu/auction/client/fxml/browse/browse-view.fxml", "Sàn đấu giá | Khám phá");
+        showView("/vn/edu/auction/client/fxml/browse/browse-view.fxml", "Bidora. | Khám phá");
     }
 
     public static void showProducts() {
         showBrowse();
-        if (primaryStage != null && primaryStage.getScene() != null
-                && primaryStage.getScene().getRoot() instanceof javafx.scene.layout.BorderPane pane
-                && pane.getCenter() instanceof javafx.scene.control.TabPane tabs
-                && tabs.getTabs().size() > 1) {
-            tabs.getSelectionModel().select(1);
+        if (primaryStage != null && primaryStage.getScene() != null) {
+            javafx.scene.Node node = primaryStage.getScene().lookup("#browseTabs");
+            if (node instanceof javafx.scene.control.TabPane tabs) tabs.getSelectionModel().select(1);
         }
     }
 
