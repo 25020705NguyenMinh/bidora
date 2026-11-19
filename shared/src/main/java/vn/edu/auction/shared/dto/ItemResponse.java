@@ -1,5 +1,6 @@
 package vn.edu.auction.shared.dto;
 
+import vn.edu.auction.shared.enums.AuctionStatus;
 import vn.edu.auction.shared.enums.ItemStatus;
 
 import java.math.BigDecimal;
@@ -12,6 +13,7 @@ public class ItemResponse {
     private String description;
     private BigDecimal startingPrice;
     private ItemStatus status;
+    private AuctionStatus auctionStatus;
 
     public ItemResponse(Long id, Long sellerId, String name, String description,
                         BigDecimal startingPrice, ItemStatus status) {
@@ -23,6 +25,17 @@ public class ItemResponse {
         this.status = status;
     }
 
+    public ItemResponse(Long id, Long sellerId, String name, String description,
+                        BigDecimal startingPrice, ItemStatus status, AuctionStatus auctionStatus) {
+        this.id = id;
+        this.sellerId = sellerId;
+        this.name = name;
+        this.description = description;
+        this.startingPrice = startingPrice;
+        this.status = status;
+        this.auctionStatus = auctionStatus;
+    }
+
     public ItemResponse(){}
 
     public Long getId(){return id;}
@@ -31,6 +44,7 @@ public class ItemResponse {
     public String getDescription(){return description;}
     public BigDecimal getStartingPrice(){return startingPrice;}
     public ItemStatus getStatus(){return status;}
+    public AuctionStatus getAuctionStatus(){return auctionStatus;}
 
     public void setId(Long newId){this.id = newId;}
     public void setSellerId(Long newSellerId){this.sellerId = newSellerId;}
@@ -38,5 +52,6 @@ public class ItemResponse {
     public void setDescription(String newDescription){this.description = newDescription;}
     public void setStartingPrice(BigDecimal newStartingPrice){this.startingPrice = newStartingPrice;}
     public void setStatus(ItemStatus newStatus){this.status = newStatus;}
-    
+    public void setAuctionStatus(AuctionStatus newAuctionStatus){this.auctionStatus = newAuctionStatus;}
+
 }

@@ -205,6 +205,23 @@ public class AuthController {
     // ====================================================================
     // 4. ĐĂNG NHẬP
     // ====================================================================
+    private static AuthResponse fromJwt(String token, String fallbackName) {
+        try {
+            String[] parts = token.split("\\.");
+            byte[] payload = java.util.Base64.getUrlDecoder().decode(parts[1]);
+            com.fasterxml.jackson.databind.JsonNode n =
+                    new com.fasterxml.jackson.databind.ObjectMapper().readTree(payload);
+            AuthResponse r = new AuthResponse();
+            r.setToken(token);
+            r.setUserId(Long.valueOf(n.get("sub").asText()));
+            r.setEmail(n.path("email").asText(null));
+            r.setRole(UserRole.valueOf(n.path("role").asText("BIDDER")));
+            r.setFullName(fallbackName);
+            return r;
+        } catch (Exception e) {
+            return null;
+        }
+    }
     @FXML
     private void handleLogin() {
         if (busy) return;
@@ -309,18 +326,14 @@ public class AuthController {
                     exchange.sendResponseHeaders(200, responseBytes.length);
                     exchange.getResponseBody().write(responseBytes);
 
-                    // Truyền cả token và name xuống cho giao diện
                     if (token != null && !token.isEmpty()) {
-                        String finalToken = token;
-                        String finalName = name;
-                        javafx.application.Platform.runLater(() -> {
-                            AuthResponse authResponse = new AuthResponse();
-                            authResponse.setToken(finalToken);
-
-                            // Gắn tên vào AuthResponse để hiển thị "Xin chào, [Tên]"
-                            authResponse.setFullName(finalName);
-
-                            onLoginSuccess(authResponse);
+                        AuthResponse me = fromJwt(token, name);
+                        Platform.runLater(() -> {
+                            if (me == null) {
+                                showMessage("Không đọc được thông tin tài khoản. Vui lòng thử lại.");
+                            } else {
+                                onLoginSuccess(me);
+                            }
                         });
                     }
                 } finally {
@@ -333,10 +346,11 @@ public class AuthController {
             System.out.println("Local Callback Server started on port 8081");
 
         } catch (Exception e) {
-            e.printStackTrace();
-            javafx.application.Platform.runLater(() -> showMessage("Lỗi khởi tạo trạm nhận đăng nhập."));
+            LOG.log(System.Logger.Level.ERROR, "Lỗi khởi tạo trạm nhận đăng nhập Google", e);
+            Platform.runLater(() -> showMessage("Lỗi khởi tạo trạm nhận đăng nhập."));
         }
     }
+
 //
 //    @FXML
 //    private void handleFacebookLogin() {

@@ -23,14 +23,15 @@ public class ItemService {
     }
 
     public List<ItemResponse> getAllItems() {
-        return items.findAll().stream().filter(i -> i.getStatus() != ItemStatus.REMOVED).map(this::response).toList();
+        return items.findAll().stream().filter(i -> i.getStatus() == null || i.getStatus() != ItemStatus.REMOVED).map(this::response).toList();
     }
 
-    /** Danh sách cho người xem cụ thể: sản phẩm chờ duyệt (DRAFT) chỉ chủ sở hữu mới thấy. */
+    /** Danh sách cho người xem cụ thể: sản phẩm chờ duyệt (DRAFT) chỉ chủ sở hữu hoặc ADMIN mới thấy. */
     public List<ItemResponse> getAllItems(Long viewerId) {
+        boolean isAdmin = users.isAdmin(viewerId);
         return items.findAll().stream()
-                .filter(i -> i.getStatus() != ItemStatus.REMOVED
-                        && (i.getStatus() != ItemStatus.DRAFT || i.getSellerId().equals(viewerId)))
+                .filter(i -> (i.getStatus() == null || i.getStatus() != ItemStatus.REMOVED)
+                        && (isAdmin || i.getStatus() != ItemStatus.DRAFT || i.getSellerId().equals(viewerId)))
                 .map(this::response).toList();
     }
 
@@ -86,6 +87,8 @@ public class ItemService {
     }
 
     private ItemResponse response(ItemEntity item) {
-        return new ItemResponse(item.getId(), item.getSellerId(), item.getName(), item.getDescription(), item.getStartingPrice(), item.getStatus());
+        ItemResponse resp = new ItemResponse(item.getId(), item.getSellerId(), item.getName(), item.getDescription(), item.getStartingPrice(), item.getStatus());
+        auctions.findByItemId(item.getId()).ifPresent(a -> resp.setAuctionStatus(a.getStatus()));
+        return resp;
     }
 }
