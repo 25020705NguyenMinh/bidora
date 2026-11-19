@@ -13,8 +13,8 @@
    <content>
     <VBox spacing="18" styleClass="management-page">
      <VBox spacing="5">
-      <Label fx:id="kickerLabel" text="KHÔNG GIAN NGƯỜI BÁN" styleClass="section-kicker"/>
-      <Label fx:id="titleLabel" text="Sản phẩm của bạn" styleClass="section-title"/>
+      <Label fx:id="kickerLabel" text="KHÔNG GIAN BÁN HÀNG" styleClass="section-kicker"/>
+      <Label fx:id="titleLabel" text="Bán sản phẩm" styleClass="section-title"/>
       <Label fx:id="subtitleLabel" text="Thêm sản phẩm, theo dõi phê duyệt và tạo phiên đấu giá." styleClass="section-subtitle"/>
      </VBox>
      <HBox spacing="18" VBox.vgrow="ALWAYS">
@@ -62,8 +62,8 @@
         <TextField fx:id="startingPriceField" promptText="Nhập số tiền"/>
        </VBox>
        <VBox fx:id="feedbackBox" spacing="6" visible="false" managed="false">
-        <Label text="Phản hồi cho người bán" styleClass="field-label"/>
-        <TextArea fx:id="feedbackArea" prefHeight="80" promptText="Nhập phản hồi/ghi chú gửi kèm thông báo tới người bán khi phê duyệt hoặc từ chối..." wrapText="true"/>
+        <Label text="Feedback gửi người bán" styleClass="field-label"/>
+        <TextArea fx:id="feedbackArea" prefHeight="80" promptText="Nội dung này hiện trong thông báo của người bán khi bạn phê duyệt hoặc từ chối..." wrapText="true"/>
        </VBox>
        <Button fx:id="createItemButton" text="Thêm sản phẩm" onAction="#handleCreateItem" maxWidth="Infinity" styleClass="primary-button"/>
        <Button fx:id="approveButton" text="Phê duyệt sản phẩm" onAction="#handleApproveItem" maxWidth="Infinity" styleClass="primary-button" visible="false" managed="false"/>

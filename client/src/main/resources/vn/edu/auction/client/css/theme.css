@@ -59,6 +59,7 @@
 .section-note { -fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #777f8d; }
 .market-tabs { -fx-background-color: transparent; -fx-padding: 0; }
 .market-tabs > .tab-header-area { -fx-padding: 0; }
+.admin-tabs > .tab-header-area { -fx-padding: 8 38 0 38; }
 .market-tabs .tab-header-background { -fx-background-color: transparent; }
 .market-tabs .tab { -fx-background-color: transparent; -fx-padding: 11 20; -fx-border-color: transparent transparent #dfe2e8 transparent; -fx-border-width: 0 0 2 0; }
 .market-tabs .tab:selected { -fx-border-color: transparent transparent #3559e8 transparent; }

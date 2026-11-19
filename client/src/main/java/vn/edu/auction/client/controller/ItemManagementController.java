@@ -87,6 +87,9 @@ public class ItemManagementController {
     private final ObservableList<ItemResponse> itemList = FXCollections.observableArrayList();
     private List<ItemResponse> allAdminItems = new ArrayList<>();
 
+    /** true khi server chưa có /api/admin/items nên chỉ lấy được danh sách chờ duyệt. */
+    private volatile boolean pendingOnly;
+
     private enum AdminFilter { PENDING, UPCOMING, ACTIVE, ALL }
     private AdminFilter currentFilter = AdminFilter.PENDING;
 
@@ -127,9 +130,9 @@ public class ItemManagementController {
             if (titleLabel != null) titleLabel.setText("Quản lý sản phẩm");
             if (subtitleLabel != null) subtitleLabel.setText("Phê duyệt sản phẩm, theo dõi danh sách chờ duyệt, sắp bán, đang bán.");
             if (tableTitleLabel != null) tableTitleLabel.setText("Danh sách sản phẩm hệ thống");
-            if (tableSubtitleLabel != null) tableSubtitleLabel.setText("Chọn một sản phẩm để xem chi tiết, phê duyệt hoặc xóa.");
+            if (tableSubtitleLabel != null) tableSubtitleLabel.setText("Chọn một sản phẩm để xem chi tiết và phê duyệt.");
             if (formTitleLabel != null) formTitleLabel.setText("Chi tiết & Phê duyệt");
-            if (formSubtitleLabel != null) formSubtitleLabel.setText("Xem thông tin sản phẩm và gửi phản hồi khi phê duyệt.");
+            if (formSubtitleLabel != null) formSubtitleLabel.setText("Phê duyệt hoặc từ chối, kèm feedback để người bán đọc trong thông báo.");
 
             if (createAuctionButton != null) {
                 createAuctionButton.setVisible(false);
@@ -174,9 +177,9 @@ public class ItemManagementController {
                 deleteButton.setManaged(false);
             }
         } else {
-            if (kickerLabel != null) kickerLabel.setText("KHÔNG GIAN NGƯỜI BÁN");
-            if (titleLabel != null) titleLabel.setText("Sản phẩm của bạn");
-            if (subtitleLabel != null) subtitleLabel.setText("Thêm sản phẩm, theo dõi phê duyệt và tạo phiên đấu giá.");
+            if (kickerLabel != null) kickerLabel.setText("KHÔNG GIAN BÁN HÀNG");
+            if (titleLabel != null) titleLabel.setText("Bán sản phẩm");
+            if (subtitleLabel != null) subtitleLabel.setText("Thêm sản phẩm, theo dõi phê duyệt và tạo phiên đấu giá. Feedback của quản trị viên sẽ hiện ở chuông thông báo.");
             if (createAuctionButton != null) {
                 createAuctionButton.setVisible(true);
                 createAuctionButton.setManaged(true);
@@ -244,7 +247,17 @@ public class ItemManagementController {
         System.out.println("[ItemManagement] loadItems - isAdmin: " + isAdmin + ", role: " + SessionData.getInstance().getRole() + ", userId: " + SessionData.getInstance().getUserId());
         showMessage("Đang tải danh sách sản phẩm...");
         if (isAdmin) {
-            FxAsync.run(adminApi::allItems, all -> {
+            FxAsync.run(() -> {
+                try {
+                    pendingOnly = false;
+                    return adminApi.allItems();
+                } catch (vn.edu.auction.client.api.AuthApiClient.ApiException ex) {
+                    // Server cũ chưa có /api/admin/items: vẫn lấy được danh sách chờ duyệt để duyệt sản phẩm
+                    System.err.println("[ItemManagement] /api/admin/items lỗi (" + ex.getMessage() + "), chuyển sang /pending");
+                    pendingOnly = true;
+                    return adminApi.pendingItems();
+                }
+            }, all -> {
                 allAdminItems = all;
                 System.out.println("[ItemManagement] admin items nhận được: " + all.size());
                 for (var item : all) {
@@ -261,6 +274,10 @@ public class ItemManagementController {
                 if (filterAllBtn != null) filterAllBtn.setText("Tất cả (" + allCount + ")");
 
                 applyFilter();
+                if (pendingOnly) {
+                    showMessage("Server chưa hỗ trợ xem toàn bộ sản phẩm nên chỉ hiện danh sách chờ duyệt ("
+                            + all.size() + "). Deploy lại server để dùng đủ các bộ lọc.");
+                }
             }, err -> {
                 System.err.println("[ItemManagement] admin items lỗi: " + err.getMessage());
                 err.printStackTrace();
@@ -351,7 +368,7 @@ public class ItemManagementController {
             adminApi.approveItem(selected.getId(), feedback);
             return Boolean.TRUE;
         }, ok -> {
-            showMessage("Đã phê duyệt sản phẩm \"" + selected.getName() + "\" thành công và gửi thông báo tới người bán!");
+            showMessage("Đã phê duyệt sản phẩm \"" + selected.getName() + "\" và gửi thông báo (kèm feedback) tới người bán.");
             if (feedbackArea != null) feedbackArea.clear();
             clearForm();
             loadItems();
@@ -386,7 +403,7 @@ public class ItemManagementController {
                 adminApi.rejectItem(selected.getId(), feedback);
                 return Boolean.TRUE;
             }, ok -> {
-                showMessage("Đã từ chối sản phẩm \"" + selected.getName() + "\" và gửi thông báo tới người bán.");
+                showMessage("Đã từ chối sản phẩm \"" + selected.getName() + "\" và gửi thông báo (kèm feedback) tới người bán.");
                 if (feedbackArea != null) feedbackArea.clear();
                 clearForm();
                 loadItems();
