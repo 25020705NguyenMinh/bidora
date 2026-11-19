@@ -12,6 +12,14 @@ public class AuctionUserService {
 
     public AuctionUserService(UserRepository users) { this.users = users; }
 
+    public java.util.Optional<UserEntity> findById(Long userId) {
+        return userId == null ? java.util.Optional.empty() : users.findById(userId);
+    }
+
+    public boolean isAdmin(Long userId) {
+        return userId != null && users.findById(userId).map(u -> u.getRole() == UserRole.ADMIN).orElse(false);
+    }
+
     public UserEntity requireRole(Long userId, UserRole role) {
         AuctionRules.require(userId != null, HttpStatus.UNAUTHORIZED, "Vui long dang nhap.");
         UserEntity user = users.findById(userId).orElse(null);

@@ -31,16 +31,29 @@ public class AdminController {
         admin.deleteUser(AuctionPrincipal.userId(a), id);
     }
 
+    @GetMapping("/items")
+    public List<ItemResponse> allItems() { return admin.allItems(); }
+
     @GetMapping("/items/pending")
     public List<ItemResponse> pending() { return admin.pendingItems(); }
 
     @PostMapping("/items/{id}/approve")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void approve(@PathVariable("id") Long id) { admin.approveItem(id); }
+    public void approve(@PathVariable("id") Long id, @RequestBody(required = false) ReviewFeedbackRequest body) {
+        admin.approveItem(id, body != null ? body.feedback() : null);
+    }
 
     @PostMapping("/items/{id}/reject")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void reject(@PathVariable("id") Long id) { admin.rejectItem(id); }
+    public void reject(@PathVariable("id") Long id, @RequestBody(required = false) ReviewFeedbackRequest body) {
+        admin.rejectItem(id, body != null ? body.feedback() : null);
+    }
+
+    @DeleteMapping("/items/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteItem(@PathVariable("id") Long id) {
+        admin.deleteItem(id);
+    }
 
     @GetMapping("/auctions")
     public List<AdminAuctionResponse> auctions() { return admin.auctions(); }

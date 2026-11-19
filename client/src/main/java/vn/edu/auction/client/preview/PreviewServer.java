@@ -63,7 +63,23 @@ public final class PreviewServer {
         Object result;
         int status = 200;
         try {
-            if (path.equals("/api/items") && method.equals("GET")) result = items;
+            if (path.equals("/api/admin/items") && method.equals("GET")) result = items;
+            else if (path.matches("/api/admin/items/\\d+/approve") && method.equals("POST")) {
+                long id = Long.parseLong(path.split("/")[4]);
+                items.stream().filter(i -> i.getId() == id).findFirst().ifPresent(i -> i.setStatus(ItemStatus.ACTIVE));
+                status = 204;
+                result = java.util.Map.of();
+            } else if (path.matches("/api/admin/items/\\d+/reject") && method.equals("POST")) {
+                long id = Long.parseLong(path.split("/")[4]);
+                items.stream().filter(i -> i.getId() == id).findFirst().ifPresent(i -> i.setStatus(ItemStatus.REMOVED));
+                status = 204;
+                result = java.util.Map.of();
+            } else if (path.matches("/api/admin/items/\\d+") && method.equals("DELETE")) {
+                long id = Long.parseLong(path.split("/")[4]);
+                items.stream().filter(i -> i.getId() == id).findFirst().ifPresent(i -> i.setStatus(ItemStatus.REMOVED));
+                status = 204;
+                result = java.util.Map.of();
+            } else if (path.equals("/api/items") && method.equals("GET")) result = items;
             else if (path.startsWith("/api/items/") && method.equals("GET")) {
                 long id = Long.parseLong(path.substring("/api/items/".length()));
                 result = items.stream().filter(i -> i.getId() == id).findFirst().orElseThrow();

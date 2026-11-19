@@ -67,7 +67,8 @@ public class SecurityConfig {
                                 "/api/health",
                                 "/login/**",
                                 "/login/oauth2/**",
-                                "/oauth2/**"
+                                "/oauth2/**",
+                                "/api/auth/me"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auctions", "/api/auctions/{id:[0-9]+}",
                                 "/api/auctions/{id:[0-9]+}/bids").permitAll()

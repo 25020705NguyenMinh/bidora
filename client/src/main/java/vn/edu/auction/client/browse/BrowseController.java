@@ -80,6 +80,8 @@ public class BrowseController {
         browseTabs.setPrefHeight(570);
         manageButton.setVisible(in);
         manageButton.setManaged(in);
+        boolean isAdmin = SessionData.getInstance().getRole() == vn.edu.auction.shared.enums.UserRole.ADMIN;
+        manageButton.setText(isAdmin ? "Quản lý sản phẩm" : "Bán sản phẩm");
         // Ô user góc phải: Đăng nhập / chuông / chat / menu (Ví, Tài khoản, Quản trị, Đăng xuất)
         vn.edu.auction.client.ui.UserArea.render(userArea, this::refreshAccount);
         if (changed) { // đăng nhập / đăng xuất => tải lại dữ liệu thật
@@ -90,7 +92,9 @@ public class BrowseController {
     }
     @FXML private void handleManageItems() {
         if (!SessionData.getInstance().isLoggedIn()) return;
-        NavigationController.showView("/vn/edu/auction/client/fxml/item-management-view.fxml", "Quản lý sản phẩm");
+        boolean isAdmin = SessionData.getInstance().getRole() == vn.edu.auction.shared.enums.UserRole.ADMIN;
+        NavigationController.showView("/vn/edu/auction/client/fxml/item-management-view.fxml",
+                isAdmin ? "Quản lý sản phẩm" : "Bán sản phẩm");
     }
     public static void openLogin(Stage owner, Runnable onClose) {
         if (SessionData.getInstance().isPreviewMode()) {
