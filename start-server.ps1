@@ -1,9 +1,11 @@
-param([switch]$Google)
+param([switch]$Google, [string]$EnvFile = (Join-Path $PSScriptRoot '.env'))
 
 $ErrorActionPreference = 'Stop'
 $previous = @{}
 function Set-LaunchValue([string]$Name, [string]$Value) {
-    $previous[$Name] = [Environment]::GetEnvironmentVariable($Name)
+    if (-not $previous.ContainsKey($Name)) {
+        $previous[$Name] = [Environment]::GetEnvironmentVariable($Name)
+    }
     [Environment]::SetEnvironmentVariable($Name, $Value, 'Process')
 }
 function Read-Setting([string]$Name, [switch]$Secret) {
@@ -26,6 +28,26 @@ function Read-Setting([string]$Name, [switch]$Secret) {
 
 Push-Location $PSScriptRoot
 try {
+    if (Test-Path -LiteralPath $EnvFile -PathType Leaf) {
+        $allowed = @('DB_URL', 'DB_USERNAME', 'DB_PASSWORD', 'JWT_SECRET', 'MAIL_HOST', 'MAIL_PORT',
+            'MAIL_USER', 'MAIL_PASSWORD', 'PORT', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET',
+            'SPRING_PROFILES_ACTIVE', 'SPRING_PROFILES_INCLUDE')
+        $lineNumber = 0
+        foreach ($line in Get-Content -LiteralPath $EnvFile -Encoding UTF8) {
+            $lineNumber++
+            if ([string]::IsNullOrWhiteSpace($line) -or $line.TrimStart().StartsWith('#')) { continue }
+            if ($line -notmatch '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$') { throw "Invalid setting on line $lineNumber" }
+            $key = $Matches[1]
+            $entry = $Matches[2].Trim()
+            if ($key -notin $allowed) { throw "Unknown server setting on line $lineNumber ($key)" }
+            if ($entry.Length -ge 2 -and $entry[0] -eq $entry[-1] -and $entry[0] -in '"', "'") {
+                $entry = $entry.Substring(1, $entry.Length - 2)
+            }
+            if ($entry -and -not [Environment]::GetEnvironmentVariable($key)) {
+                Set-LaunchValue $key $entry
+            }
+        }
+    } elseif ($PSBoundParameters.ContainsKey('EnvFile')) { throw "Cannot find env file: $EnvFile" }
     if (-not $env:DB_URL) {
         $jdbc = Read-Host 'DB_URL (JDBC URL, Enter for the configured TiDB endpoint)'
         if ($jdbc) { Set-LaunchValue 'DB_URL' $jdbc }

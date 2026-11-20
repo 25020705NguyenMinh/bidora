@@ -1,197 +1,1212 @@
-/* Bidora. — one shared palette for marketplace, forms and dialogs. */
+/* Shared component geometry and semantic palette. dark.css changes tokens only. */
+
 .root, .dialog-pane {
-    -fx-font-family: "Be Vietnam Pro"; -fx-font-size: 13px;
-    -fx-base: #ffffff; -fx-accent: #3559e8; -fx-focus-color: #3559e8;
-    -fx-faint-focus-color: #3559e822; -fx-background-color: #f5f5f3; -fx-text-fill: #171b28;
+    -fx-font-family: "Be Vietnam Pro";
+    -fx-font-size: 13px;
+    -bidora-canvas: #f7f6f2;
+    -bidora-surface: #fffefa;
+    -bidora-surface-soft: #efede6;
+    -bidora-surface-hover: #e5e1d7;
+    -bidora-text: #282720;
+    -bidora-muted: #6c685e;
+    -bidora-border: #dbd6ca;
+    -bidora-accent: #8a6332;
+    -bidora-action: #e7ceaa;
+    -bidora-action-hover: #dcc096;
+    -bidora-on-action: #30281d;
+    -bidora-focus-wash: #8a633226;
+    -bidora-danger: #a7372f;
+    -bidora-danger-surface: #fff0ec;
+    -bidora-success: #2d714c;
+    -bidora-on-image: #fffefa;
+    -bidora-image-overlay: #24211ce6;
+    -bidora-shadow: #211d1826;
+    -fx-base: -bidora-surface;
+    -fx-accent: -bidora-accent;
+    -fx-focus-color: -bidora-accent;
+    -fx-faint-focus-color: -bidora-focus-wash;
+    -fx-control-inner-background: -bidora-surface;
+    -fx-text-background-color: -bidora-text;
+    -fx-background-color: -bidora-canvas;
+    -bidora-feature-surface: -bidora-surface-soft;
+    -bidora-feature-text: -bidora-text;
+    -bidora-feature-secondary: -bidora-muted;
+    -bidora-feature-action: -bidora-action;
 }
-.label { -fx-text-fill: #171b28; }
-.button, .menu-button {
-    -fx-background-color: #ffffff; -fx-background-radius: 10;
-    -fx-border-color: #dfe2e8; -fx-border-radius: 10;
-    -fx-text-fill: #202532; -fx-font-size: 13px; -fx-font-weight: bold;
-    -fx-padding: 10 15; -fx-cursor: hand;
+
+.dialog-pane { -fx-background-color: -bidora-surface; }
+
+.label {
+    -fx-text-fill: -bidora-text;
 }
-.button:hover, .menu-button:hover { -fx-background-color: #f0f3ff; -fx-border-color: #b7c2f2; }
-.button:pressed, .menu-button:pressed { -fx-background-color: #dfe6ff; }
-.button:disabled { -fx-opacity: .55; }
-.button.primary-button, .button.full-width-button { -fx-background-color: #3559e8; -fx-border-color: #3559e8; -fx-text-fill: white; }
-.button.primary-button:hover, .button.full-width-button:hover { -fx-background-color: #2446cd; -fx-border-color: #2446cd; }
-.button.danger-button { -fx-background-color: #fff3f2; -fx-border-color: #f0c7c3; -fx-text-fill: #a53932; }
-.button.danger-button:hover { -fx-background-color: #ffe6e3; }
-.text-input, .input-field {
-    -fx-font-size: 13px; -fx-text-fill: #171b28; -fx-prompt-text-fill: #7a8191;
-    -fx-background-color: white; -fx-background-radius: 10; -fx-border-radius: 10;
-    -fx-border-color: #dfe2e8; -fx-padding: 11 13;
+
+.button:pressed {
+    -fx-background-color: -bidora-surface-hover;
 }
-.text-input:focused { -fx-border-color: #3559e8; }
-.hyperlink, .auth-link { -fx-text-fill: #3559e8; }
-.muted, .section-subtitle { -fx-text-fill: #687080; }
-.badge { -fx-background-color: #edf0ff; -fx-background-radius: 8; -fx-padding: 6 9; -fx-text-fill: #294bda; -fx-font-size: 10px; -fx-font-weight: bold; }
-.message-label { -fx-text-fill: #677080; -fx-font-style: normal; }
-.field-error, .error-label, .auth-root .message-label { -fx-text-fill: #b43c35; }
-.input-field.input-error, .password-container.input-error { -fx-border-color: #bd443d; }
 
-/* Marketplace shell */
-.market-shell, .market-scroll, .market-scroll > .viewport { -fx-background-color: #f5f5f3; -fx-border-color: transparent; }
-.market-nav { -fx-background-color: #ffffff; -fx-padding: 14 38; -fx-border-color: transparent transparent #e8e9eb transparent; }
-.market-brand { -fx-font-size: 21px; -fx-font-weight: bold; -fx-text-fill: #171b28; }
-.market-brand-sub { -fx-font-size: 8px; -fx-font-weight: bold; -fx-text-fill: #777f8d; }
-.button.nav-link { -fx-background-color: transparent; -fx-border-color: transparent; -fx-text-fill: #505767; -fx-padding: 10 14; }
-.button.nav-link:hover { -fx-background-color: #f1f3f9; -fx-text-fill: #3559e8; }
-.button.nav-sell { -fx-background-color: #eef1ff; -fx-border-color: transparent; -fx-text-fill: #3559e8; }
-.market-nav .outline-button { -fx-background-color: #f7f8fb; -fx-border-color: #e6e8ef; }
-.market-content { -fx-padding: 26 38 0 38; }
-.feature { -fx-background-color: #e9edff; -fx-background-radius: 20; }
-.feature-copy { -fx-padding: 34 38; }
-.feature-kicker { -fx-text-fill: #3559e8; -fx-font-weight: bold; -fx-font-size: 10px; }
-.feature-title { -fx-text-fill: #171b28; -fx-font-size: 36px; -fx-font-weight: 900; }
-.feature-description { -fx-text-fill: #555e70; -fx-font-size: 14px; }
-.feature-actions { -fx-padding: 3 0 0 0; }
-.feature .button.primary-button { -fx-padding: 13 19; }
-.feature-footnote { -fx-text-fill: #65718a; -fx-font-size: 11px; }
-.feature-image { -fx-background-color: #20242b; -fx-background-image: url("../icons/placeholder-camera.jpg"); -fx-background-size: cover; -fx-background-position: center center; -fx-background-radius: 0 20 20 0; }
-.feature-image-overlay { -fx-background-color: linear-gradient(to top, #080b0dbb, transparent); -fx-background-radius: 0 20 20 0; -fx-padding: 24; }
-.photo-caption { -fx-text-fill: #dedfe4; -fx-font-size: 10px; -fx-font-weight: bold; }
-.photo-title { -fx-text-fill: #ffffff; -fx-font-size: 18px; -fx-font-weight: bold; }
-.section-heading { -fx-padding: 30 0 18 0; }
-.section-kicker { -fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #3559e8; }
-.section-title, .screen-title { -fx-font-size: 25px; -fx-font-weight: bold; -fx-text-fill: #171b28; }
-.section-note { -fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #777f8d; }
-.market-tabs { -fx-background-color: transparent; -fx-padding: 0; }
-.market-tabs > .tab-header-area { -fx-padding: 0; }
-.admin-tabs > .tab-header-area { -fx-padding: 8 38 0 38; }
-.market-tabs .tab-header-background { -fx-background-color: transparent; }
-.market-tabs .tab { -fx-background-color: transparent; -fx-padding: 11 20; -fx-border-color: transparent transparent #dfe2e8 transparent; -fx-border-width: 0 0 2 0; }
-.market-tabs .tab:selected { -fx-border-color: transparent transparent #3559e8 transparent; }
-.market-tabs .tab-label { -fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #6e7582; }
-.market-tabs .tab:selected .tab-label { -fx-text-fill: #274bd9; }
-.market-tabs .focus-indicator { -fx-border-color: transparent; }
-.catalog-view { -fx-padding: 18 0 0 0; }
-.catalog-search { -fx-background-color: #ffffff; }
-.catalog-message { -fx-text-fill: #5d6676; -fx-font-size: 12px; }
-.catalog-scroll, .catalog-scroll > .viewport { -fx-background-color: transparent; -fx-border-color: transparent; }
-.catalog-scroll > .corner { -fx-background-color: transparent; }
-.listing-card { -fx-background-color: #ffffff; -fx-background-radius: 15; -fx-border-color: #e5e7eb; -fx-border-radius: 15; -fx-effect: dropshadow(gaussian, #161a260b, 12, 0, 0, 4); }
-.listing-photo { -fx-background-color: #e9e9ed; -fx-background-radius: 14 14 0 0; }
-.listing-art { -fx-background-size: cover; -fx-background-position: center center; }
-.listing-photo.detail-photo { -fx-background-radius: 12; }
-.listing-skeleton-image { -fx-background-color: #edf0f6; -fx-background-radius: 14 14 0 0; }
-.photo-camera { -fx-background-image: url("../icons/placeholder-camera.jpg"); }
-.photo-watch { -fx-background-image: url("../icons/placeholder-watch.jpg"); }
-.photo-headphones { -fx-background-image: url("../icons/placeholder-headphones.jpg"); }
-.photo-chair { -fx-background-image: url("../icons/placeholder-chair.jpg"); }
-.listing-image-note { -fx-background-color: #171b28bb; -fx-background-radius: 5; -fx-text-fill: white; -fx-padding: 4 6; -fx-font-size: 8px; -fx-font-weight: bold; }
-.listing-info { -fx-padding: 15; }
-.listing-status { -fx-text-fill: #3559e8; -fx-font-size: 10px; -fx-font-weight: bold; }
-.listing-title { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #171b28; }
-.listing-caption { -fx-font-size: 10px; -fx-text-fill: #7a8191; -fx-font-weight: bold; }
-.listing-price { -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #171b28; }
-.listing-secondary { -fx-font-size: 11px; -fx-text-fill: #687080; }
-.button.listing-action { -fx-background-color: #edf0ff; -fx-border-color: transparent; -fx-text-fill: #294bda; -fx-padding: 10; }
-.button.listing-action:hover { -fx-background-color: #3559e8; -fx-text-fill: white; }
-.market-footer { -fx-padding: 30 0; -fx-border-color: #e3e5e9 transparent transparent transparent; }
-.market-footer-brand { -fx-font-size: 12px; -fx-font-weight: 900; }
-.management-page { -fx-padding: 28 38; }
-.management-panel { -fx-padding: 22; -fx-background-color: white; -fx-background-radius: 16; -fx-border-color: #e5e7eb; -fx-border-radius: 16; }
-.management-title { -fx-font-size: 17px; -fx-font-weight: bold; }
+.menu-button:pressed {
+    -fx-background-color: -bidora-surface-hover;
+}
 
-/* Shared dialogs, tables, account, auth and chat */
-.table-view { -fx-background-color: #ffffff; -fx-border-color: #e3e5eb; -fx-background-radius: 10; -fx-border-radius: 10; }
-.table-view .column-header, .table-view .column-header-background, .table-view .filler { -fx-background-color: #f2f4f8; }
-.table-view .column-header .label { -fx-text-fill: #586172; -fx-font-size: 12px; }
-.table-row-cell { -fx-cell-size: 49; -fx-background-color: white; -fx-border-color: transparent transparent #f0f1f4 transparent; }
-.table-row-cell:filled:hover { -fx-background-color: #f6f8ff; }
-.table-row-cell:filled:selected { -fx-background-color: #e7ecff; }
-.table-row-cell:filled:selected .text { -fx-fill: #202a53; }
-.table-cell { -fx-text-fill: #242a38; }
-.auth-root { -fx-background-color: #ffffff; -fx-font-family: "Be Vietnam Pro"; }
-.auth-form { -fx-padding: 30 46 24 46; -fx-background-color: #ffffff; }
-.auth-wordmark { -fx-text-fill: #171b28; -fx-font-size: 21px; -fx-font-weight: bold; }
-.auth-heading { -fx-padding: 12 0 2 0; }
-.auth-heading-title { -fx-text-fill: #171b28; -fx-font-size: 27px; -fx-font-weight: bold; }
-.auth-heading-copy { -fx-text-fill: #687080; -fx-font-size: 13px; }
-.button.auth-social { -fx-background-color: #ffffff; -fx-border-color: #dfe2e8; -fx-text-fill: #222938; }
-.button.auth-social:hover { -fx-background-color: #f5f7ff; }
-.auth-art { -fx-background-color: #171b28; -fx-background-image: url("../icons/placeholder-watch.jpg"); -fx-background-size: cover; -fx-background-position: center center; -fx-padding: 34; }
-.auth-art-kicker { -fx-text-fill: #dce3f5; -fx-font-size: 10px; -fx-font-weight: bold; }
-.auth-art-title { -fx-text-fill: white; -fx-font-size: 25px; -fx-font-weight: bold; }
-.auth-art-copy { -fx-text-fill: #e3e7f2; -fx-font-size: 13px; }
-.auth-root .app-title, .auth-root .otp-title { -fx-text-fill: #171b28; -fx-font-size: 26px; -fx-font-weight: bold; }
-.auth-root .subtitle, .auth-root .footer-text, .otp-description, .choice-desc { -fx-text-fill: #687080; }
-.auth-root .field-label, .input-label { -fx-text-fill: #303746; -fx-font-weight: bold; }
-.password-container { -fx-background-color: white; -fx-background-radius: 10; -fx-border-color: #dfe2e8; -fx-border-radius: 10; }
-.password-container .text-input { -fx-border-color: transparent; -fx-background-color: transparent; }
-.auth-root .eye-button { -fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 8 10; }
-.auth-root .social-icon-circle { -fx-background-color: #f6f7fb; -fx-border-color: #e3e5eb; -fx-background-radius: 12; -fx-border-radius: 12; }
-.auction-dialog { -fx-background-color: #ffffff; -fx-padding: 0; -fx-pref-width: 660; }
-.auction-dialog > .header-panel { -fx-background-color: #1c2851; -fx-padding: 22 26; }
-.auction-dialog > .header-panel .label { -fx-text-fill: white; -fx-font-size: 21px; -fx-font-weight: bold; }
-.auction-dialog > .content { -fx-padding: 22 26 10 26; }
-.auction-dialog > .button-bar { -fx-background-color: #f7f8fa; -fx-padding: 16 26; }
-.detail-content { -fx-padding: 0; -fx-spacing: 16; }
-.detail-price { -fx-text-fill: #1d2c66; -fx-font-size: 27px; -fx-font-weight: bold; }
-.detail-caption { -fx-text-fill: #687080; -fx-font-size: 11px; }
-.detail-meta { -fx-background-color: #f3f5fa; -fx-background-radius: 10; -fx-padding: 14; }
-.detail-note { -fx-text-fill: #687080; -fx-padding: 4 0; }
-.detail-scroll, .detail-scroll > .viewport { -fx-background-color: white; -fx-border-color: transparent; }
-.history-panel { -fx-background-color: white; -fx-border-color: #e3e5eb; -fx-border-radius: 10; -fx-padding: 16; }
-.history-title { -fx-font-size: 16px; -fx-font-weight: bold; }
-.history-empty { -fx-text-fill: #687080; -fx-padding: 20 0; }
-.bid-history-chart .chart-plot-background { -fx-background-color: #f8f9fc; }
-.bid-history-chart .chart-series-line { -fx-stroke: #3559e8; -fx-stroke-width: 2.5px; }
-.bid-history-chart .chart-line-symbol { -fx-background-color: #3559e8, white; -fx-background-insets: 0, 2; -fx-padding: 4; }
-.chat-header { -fx-font-size: 21px; -fx-font-weight: bold; }
-.chat-subtitle { -fx-font-size: 12px; -fx-text-fill: #687080; }
-.chat-list { -fx-background-color: #f4f5f8; -fx-background-radius: 12; -fx-padding: 6; }
-.chat-list .list-cell { -fx-background-color: transparent; -fx-padding: 5 4; }
-.chat-bubble { -fx-background-color: white; -fx-background-radius: 13; -fx-padding: 9 12; -fx-text-fill: #242a38; }
-.chat-bubble-own { -fx-background-color: #3559e8; -fx-text-fill: white; }
-.notification-panel { -fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #dfe2e8; -fx-border-radius: 12; -fx-padding: 12; -fx-effect: dropshadow(gaussian, #10172b33, 18, .15, 0, 5); }
-.notification-title { -fx-font-size: 17px; -fx-font-weight: bold; }
-.notification-badge { -fx-background-color: #b94039; -fx-text-fill: white; -fx-background-radius: 12; -fx-padding: 1 5; -fx-font-size: 10px; -fx-font-weight: bold; }
+.button:disabled {
+    -fx-opacity: .55;
+}
 
-/* Pastel palette and a quieter hierarchy for secondary actions. */
-.root, .dialog-pane { -fx-background-color: #f8f7f4; -fx-accent: #6b70b7; -fx-focus-color: #6b70b7; -fx-faint-focus-color: #6b70b722; }
-.market-shell, .market-scroll, .market-scroll > .viewport { -fx-background-color: #f8f7f4; }
-.market-nav { -fx-background-color: #fdfcfb; -fx-border-color: transparent transparent #eceaf0 transparent; }
-.feature { -fx-background-color: #e7e7f7; }
-.feature-kicker, .section-kicker, .listing-status { -fx-text-fill: #555b9d; }
-.feature-footnote { -fx-text-fill: #626a7e; }
-.button, .menu-button { -fx-background-color: #f0eff2; -fx-border-color: transparent; -fx-background-radius: 8; -fx-border-radius: 8; }
-.button:hover, .menu-button:hover { -fx-background-color: #e8e7f1; -fx-border-color: transparent; }
-.button.primary-button, .button.full-width-button { -fx-background-color: #c8c9f4; -fx-border-color: transparent; -fx-text-fill: #22264d; }
-.button.primary-button:hover, .button.full-width-button:hover { -fx-background-color: #b6b9eb; -fx-border-color: transparent; }
-.button.nav-link, .button.theme-switch { -fx-background-color: transparent; -fx-border-color: transparent; -fx-text-fill: #4a5062; -fx-padding: 9 10; }
-.button.nav-link:hover, .button.theme-switch:hover { -fx-background-color: #efedf4; -fx-text-fill: #3f468e; }
-.button.nav-sell, .market-nav .outline-button { -fx-background-color: transparent; -fx-border-color: transparent; -fx-text-fill: #383e50; }
-.button.nav-sell:hover, .market-nav .outline-button:hover { -fx-background-color: #efedf4; }
-.text-input, .input-field { -fx-background-color: #f2f1f3; -fx-border-color: transparent; -fx-background-radius: 8; -fx-border-radius: 8; }
-.text-input:focused { -fx-border-color: #858ac9; }
-.password-container { -fx-background-color: #f2f1f3; -fx-border-color: transparent; -fx-background-radius: 8; -fx-border-radius: 8; }
-.market-tabs .tab:selected { -fx-border-color: transparent transparent #7b7fc2 transparent; }
-.market-tabs .tab:selected .tab-label { -fx-text-fill: #4a509b; }
-.listing-card { -fx-background-color: #fdfcfb; -fx-border-color: #efedf0; -fx-effect: null; }
-.button.listing-action { -fx-background-color: transparent; -fx-border-color: transparent; -fx-text-fill: #5058a0; -fx-padding: 7 0 0 0; -fx-alignment: CENTER_LEFT; }
-.button.listing-action:hover { -fx-background-color: transparent; -fx-text-fill: #292e66; }
-.badge { -fx-background-color: #ececf9; -fx-text-fill: #454a8c; }
-.hyperlink, .auth-link { -fx-text-fill: #5159a6; }
-.bid-history-chart .chart-series-line { -fx-stroke: #777bc2; }
-.bid-history-chart .chart-line-symbol { -fx-background-color: #777bc2, white; }
-.line-icon { -fx-stroke: #495166; }
-.auth-social { -fx-background-color: #f6f5f7; }
+.button.danger-button {
+    -fx-background-color: -bidora-danger-surface;
+    -fx-text-fill: -bidora-danger;
+}
 
-/* Keep changing amounts and slide positions aligned digit for digit. */
-.listing-price, .detail-price, .featured-price, .featured-position, .amount-column.table-cell {
+.muted {
+    -fx-text-fill: -bidora-muted;
+}
+
+.section-subtitle {
+    -fx-text-fill: -bidora-muted;
+}
+
+.message-label {
+    -fx-font-style: normal;
+    -fx-text-fill: -bidora-muted;
+}
+
+.field-error {
+    -fx-text-fill: -bidora-danger;
+}
+
+.error-label {
+    -fx-text-fill: -bidora-danger;
+}
+
+.auth-root .message-label {
+    -fx-text-fill: -bidora-danger;
+}
+
+.input-field.input-error {
+    -fx-border-color: -bidora-danger;
+}
+
+.password-container.input-error {
+    -fx-border-color: -bidora-danger;
+}
+
+.market-brand {
+    -fx-font-size: 21px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-text;
+}
+
+.market-brand-sub {
+    -fx-font-size: 8px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-muted;
+}
+
+.market-content {
+    -fx-padding: 26 38 0 38;
+}
+
+.section-heading {
+    -fx-padding: 30 0 18 0;
+}
+
+.section-title {
+    -fx-font-size: 25px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-text;
+}
+
+.screen-title {
+    -fx-font-size: 25px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-text;
+}
+
+.section-note {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-muted;
+}
+
+.market-tabs,
+.profile-tabs {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+.market-tabs > .tab-header-area,
+.profile-tabs > .tab-header-area {
+    -fx-padding: 0;
+}
+
+.admin-tabs > .tab-header-area {
+    -fx-padding: 8 38 0 38;
+}
+
+.market-tabs .tab-header-background,
+.profile-tabs .tab-header-background {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent transparent -bidora-border transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.market-tabs .tab,
+.profile-tabs .tab {
+    -fx-padding: 12 16;
+    -fx-border-width: 0 0 2 0;
+    -fx-border-color: transparent;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4 4 0 0;
+    -fx-border-radius: 0;
+}
+
+.market-tabs .tab-label,
+.profile-tabs .tab-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-muted;
+}
+
+.market-tabs .focus-indicator,
+.profile-tabs .focus-indicator {
+    -fx-border-color: transparent;
+}
+
+.catalog-view {
+    -fx-padding: 18 0 0 0;
+}
+
+.catalog-message {
+    -fx-font-size: 12px;
+    -fx-text-fill: -bidora-muted;
+}
+
+.catalog-scroll {
+    -fx-background-color: transparent;
+}
+
+.catalog-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.catalog-scroll > .corner {
+    -fx-background-color: transparent;
+}
+
+.listing-photo {
+    -fx-background-radius: 14 14 0 0;
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.listing-art {
+    -fx-background-size: cover;
+    -fx-background-position: center center;
+}
+
+.listing-photo.detail-photo {
+    -fx-background-radius: 12;
+}
+
+.listing-skeleton-image {
+    -fx-background-radius: 14 14 0 0;
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.photo-camera {
+    -fx-background-image: url("../icons/placeholder-camera.jpg");
+}
+
+.photo-watch {
+    -fx-background-image: url("../icons/placeholder-watch.jpg");
+}
+
+.photo-headphones {
+    -fx-background-image: url("../icons/placeholder-headphones.jpg");
+}
+
+.photo-chair {
+    -fx-background-image: url("../icons/placeholder-chair.jpg");
+}
+
+.listing-image-note {
+    -fx-background-radius: 5;
+    -fx-padding: 4 6;
+    -fx-font-size: 8px;
+    -fx-font-weight: bold;
+}
+
+.listing-info {
+    -fx-padding: 15;
+}
+
+.listing-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-text;
+}
+
+.listing-caption {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-muted;
+}
+
+.listing-secondary {
+    -fx-font-size: 11px;
+    -fx-text-fill: -bidora-muted;
+}
+
+.market-footer {
+    -fx-padding: 30 0;
+}
+
+.market-footer-brand {
+    -fx-font-size: 12px;
+    -fx-font-weight: 900;
+    -fx-text-fill: -bidora-text;
+}
+
+.management-page {
+    -fx-padding: 28 38;
+}
+
+.management-panel {
+    -fx-padding: 22;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-background-color: -bidora-surface;
+    -fx-border-color: -bidora-border;
+}
+
+.management-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-text;
+}
+
+.table-view {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-background-color: -bidora-surface;
+    -fx-border-color: -bidora-border;
+}
+
+.table-view .column-header {
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.table-view .filler {
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.table-view .column-header .label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -bidora-text;
+}
+
+.table-row-cell {
+    -fx-cell-size: 49;
+    -fx-background-color: -bidora-surface;
+    -fx-border-color: transparent transparent -bidora-border transparent;
+}
+
+.table-row-cell:filled:hover {
+    -fx-background-color: -bidora-surface-hover;
+}
+
+.table-row-cell:filled:selected {
+    -fx-background-color: -bidora-surface-hover;
+}
+
+.table-row-cell:filled:selected .text {
+    -fx-fill: -bidora-text;
+}
+
+.table-cell {
+    -fx-text-fill: -bidora-text;
+}
+
+.auth-root {
+    -fx-font-family: "Be Vietnam Pro";
+    -fx-background-color: -bidora-surface;
+}
+
+.auth-form {
+    -fx-padding: 30 46 24 46;
+    -fx-background-color: -bidora-surface;
+}
+
+.auth-wordmark {
+    -fx-font-size: 21px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-text;
+}
+
+.auth-heading {
+    -fx-padding: 12 0 2 0;
+}
+
+.auth-heading-title {
+    -fx-font-size: 27px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-text;
+}
+
+.auth-heading-copy {
+    -fx-font-size: 13px;
+    -fx-text-fill: -bidora-muted;
+}
+
+.button.auth-social {
+    -fx-background-color: -bidora-surface-soft;
+    -fx-text-fill: -bidora-text;
+}
+
+.button.auth-social:hover {
+    -fx-background-color: -bidora-surface-hover;
+}
+
+.auth-art {
+    -fx-background-image: url("../icons/placeholder-watch.jpg");
+    -fx-background-size: cover;
+    -fx-background-position: center center;
+    -fx-padding: 34;
+}
+
+.auth-art-kicker {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.auth-art-title {
+    -fx-font-size: 25px;
+    -fx-font-weight: bold;
+}
+
+.auth-art-copy {
+    -fx-font-size: 13px;
+}
+
+.auth-root .app-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-text;
+}
+
+.auth-root .otp-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-text;
+}
+
+.auth-root .subtitle {
+    -fx-text-fill: -bidora-muted;
+}
+
+.auth-root .footer-text {
+    -fx-text-fill: -bidora-muted;
+}
+
+.otp-description {
+    -fx-text-fill: -bidora-muted;
+}
+
+.choice-desc {
+    -fx-text-fill: -bidora-muted;
+}
+
+.auth-root .field-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-text;
+}
+
+.input-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-text;
+}
+
+.password-container .text-input {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.auth-root .eye-button {
+    -fx-padding: 8 10;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.auth-root .social-icon-circle {
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.auction-dialog {
+    -fx-padding: 0;
+    -fx-pref-width: 660;
+    -fx-background-color: -bidora-surface;
+}
+
+.auction-dialog > .header-panel {
+    -fx-padding: 22 26;
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.auction-dialog > .header-panel .label {
+    -fx-font-size: 21px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-text;
+}
+
+.auction-dialog > .content {
+    -fx-padding: 22 26 10 26;
+}
+
+.auction-dialog > .button-bar {
+    -fx-padding: 16 26;
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.detail-content {
+    -fx-padding: 0;
+    -fx-spacing: 16;
+}
+
+.detail-caption {
+    -fx-font-size: 11px;
+    -fx-text-fill: -bidora-muted;
+}
+
+.detail-note {
+    -fx-padding: 4 0;
+    -fx-text-fill: -bidora-muted;
+}
+
+.detail-scroll {
+    -fx-background-color: -bidora-surface;
+}
+
+.detail-scroll > .viewport {
+    -fx-background-color: -bidora-surface;
+}
+
+.history-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-text;
+}
+
+.history-empty {
+    -fx-padding: 20 0;
+    -fx-text-fill: -bidora-muted;
+}
+
+.bid-history-chart .chart-plot-background {
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.chat-header {
+    -fx-font-size: 21px;
+    -fx-font-weight: bold;
+}
+
+.chat-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: -bidora-muted;
+}
+
+.chat-list {
+    -fx-background-radius: 12;
+    -fx-padding: 6;
+}
+
+.chat-list .list-cell {
+    -fx-padding: 5 4;
+}
+
+.notification-panel {
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-padding: 14;
+    -fx-background-color: -bidora-surface;
+    -fx-border-color: -bidora-border;
+    -fx-effect: dropshadow(gaussian, -bidora-shadow, 12, .1, 0, 3);
+}
+
+.notification-list {
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.notification-list .list-cell {
+    -fx-padding: 12 8;
+    -fx-text-fill: -bidora-text;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.notification-list .list-cell:filled:hover {
+    -fx-background-radius: 3;
+    -fx-background-color: -bidora-surface-hover;
+}
+
+.notification-list .placeholder .label {
+    -fx-text-fill: -bidora-muted;
+}
+
+.notification-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+}
+
+.notification-badge {
+    -fx-background-radius: 12;
+    -fx-padding: 1 5;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-background-color: -bidora-danger;
+    -fx-text-fill: -bidora-surface;
+}
+
+.market-shell {
+    -fx-background-color: -bidora-canvas;
+}
+
+.market-scroll {
+    -fx-background-color: -bidora-canvas;
+}
+
+.market-scroll > .viewport {
+    -fx-background-color: -bidora-canvas;
+}
+
+.market-nav {
+    -fx-padding: 14 28;
+    -fx-background-color: -bidora-surface;
+    -fx-border-color: transparent transparent -bidora-border transparent;
+}
+
+.section-kicker {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-accent;
+}
+
+.listing-status {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-accent;
+}
+
+.button {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-padding: 10 15;
+    -fx-cursor: hand;
+    -fx-background-color: -bidora-surface-soft;
+    -fx-text-fill: -bidora-text;
+    -fx-border-color: transparent;
+}
+
+.menu-button {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-padding: 10 15;
+    -fx-cursor: hand;
+    -fx-background-color: -bidora-surface-soft;
+    -fx-text-fill: -bidora-text;
+    -fx-border-color: transparent;
+}
+
+.button:hover {
+    -fx-background-color: -bidora-surface-hover;
+}
+
+.menu-button:hover {
+    -fx-background-color: -bidora-surface-hover;
+}
+
+.button.primary-button {
+    -fx-background-color: -bidora-action;
+    -fx-text-fill: -bidora-on-action;
+}
+
+.button.full-width-button {
+    -fx-background-color: -bidora-action;
+    -fx-text-fill: -bidora-on-action;
+}
+
+.button.full-width-button:hover {
+    -fx-background-color: -bidora-action-hover;
+}
+
+.button.nav-link {
+    -fx-padding: 9 10;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -bidora-text;
+}
+
+.button.theme-switch {
+    -fx-padding: 9 10;
+}
+
+.button.nav-link:hover {
+    -fx-background-color: -bidora-surface-hover;
+}
+
+.button.nav-sell {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -bidora-text;
+}
+
+.market-nav .outline-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -bidora-text;
+}
+
+.button.nav-sell:hover {
+    -fx-background-color: -bidora-surface-hover;
+}
+
+.market-nav .outline-button:hover {
+    -fx-background-color: -bidora-surface-hover;
+}
+
+.text-input {
+    -fx-font-size: 13px;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-padding: 11 13;
+    -fx-background-color: -bidora-surface-soft;
+    -fx-text-fill: -bidora-text;
+    -fx-prompt-text-fill: -bidora-muted;
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-width: 1;
+    -fx-highlight-fill: -bidora-action;
+    -fx-highlight-text-fill: -bidora-on-action;
+}
+
+.input-field {
+    -fx-font-size: 13px;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-padding: 11 13;
+    -fx-background-color: -bidora-surface-soft;
+    -fx-text-fill: -bidora-text;
+    -fx-prompt-text-fill: -bidora-muted;
+    -fx-border-color: transparent;
+}
+
+.text-input:focused {
+    -fx-border-color: -bidora-accent;
+}
+
+.password-container {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-background-color: -bidora-surface-soft;
+    -fx-border-color: transparent;
+}
+
+.market-tabs .tab:selected,
+.profile-tabs .tab:selected {
+    -fx-border-color: transparent transparent -bidora-accent transparent;
+    -fx-background-color: transparent;
+}
+
+.market-tabs .tab:selected .tab-label,
+.profile-tabs .tab:selected .tab-label {
+    -fx-text-fill: -bidora-text;
+}
+
+.listing-card {
+    -fx-background-radius: 15;
+    -fx-border-radius: 15;
+    -fx-background-color: -bidora-surface;
+    -fx-border-color: -bidora-border;
+}
+
+.button.listing-action {
+    -fx-padding: 7 0 0 0;
+    -fx-alignment: CENTER_LEFT;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -bidora-accent;
+}
+
+.button.listing-action:hover {
+    -fx-text-fill: -bidora-accent;
+    -fx-background-color: transparent;
+}
+
+.badge {
+    -fx-background-radius: 8;
+    -fx-padding: 6 9;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.hyperlink {
+    -fx-text-fill: -bidora-accent;
+}
+
+.auth-link {
+    -fx-text-fill: -bidora-accent;
+}
+
+.bid-history-chart .chart-series-line {
+    -fx-stroke-width: 2.5px;
+    -fx-stroke: -bidora-accent;
+}
+
+.bid-history-chart .chart-line-symbol {
+    -fx-background-insets: 0, 2;
+    -fx-padding: 4;
+    -fx-background-color: -bidora-accent, -bidora-surface;
+}
+
+.line-icon {
+    -fx-stroke: -bidora-muted;
+}
+
+.listing-price {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Monospaced";
+    -fx-text-fill: -bidora-text;
+}
+
+.detail-price {
+    -fx-font-size: 27px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Monospaced";
+    -fx-text-fill: -bidora-text;
+}
+
+.featured-price {
     -fx-font-family: "Monospaced";
 }
-.amount-column.table-cell { -fx-alignment: center-right; }
-.market-nav .button, .market-nav .menu-button { -fx-min-height: 40; }
-.preview-notice { -fx-font-size: 10px; -fx-text-fill: #575177; -fx-font-weight: bold; }
-.button:focus-visible, .menu-button:focus-visible, .hyperlink:focus-visible {
-    -fx-border-color: -fx-focus-color;
+
+.featured-position {
+    -fx-font-family: "Monospaced";
 }
+
+.amount-column.table-cell {
+    -fx-font-family: "Monospaced";
+    -fx-alignment: center-right;
+}
+
+.market-nav .button {
+    -fx-min-height: 40;
+}
+
+.market-nav .menu-button {
+    -fx-min-height: 40;
+}
+
+.preview-notice {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-accent;
+    -fx-min-width: 120;
+    -fx-pref-width: 120;
+    -fx-max-width: 120;
+}
+
+.button:focus-visible {
+    -fx-border-color: -bidora-accent;
+}
+
+.menu-button:focus-visible {
+    -fx-border-color: -bidora-accent;
+}
+
+.hyperlink:focus-visible {
+    -fx-border-color: -bidora-accent;
+}
+
 .market-tabs .tab:focus-visible .focus-indicator,
-.market-tabs:focused .tab:selected .focus-indicator {
-    -fx-border-color: -fx-focus-color;
+.profile-tabs .tab:focus-visible .focus-indicator {
+    -fx-border-radius: 3;
+    -fx-border-color: -bidora-accent;
+}
+
+.market-tabs:focused .tab:selected .focus-indicator,
+.profile-tabs:focused .tab:selected .focus-indicator {
+    -fx-border-radius: 3;
+    -fx-border-color: -bidora-accent;
+}
+
+.market-nav .theme-switch {
+    -fx-min-height: 44;
+    -fx-pref-height: 44;
+    -fx-max-height: 44;
+    -fx-padding: 0 12;
+    -fx-border-width: 1;
+    -fx-min-width: 98;
+    -fx-pref-width: 98;
+    -fx-max-width: 98;
+    -fx-graphic-text-gap: 8;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-background-color: -bidora-surface-soft;
+    -fx-text-fill: -bidora-text;
+    -fx-alignment: CENTER_LEFT;
+    -fx-border-radius: 6;
+    -fx-border-color: transparent;
+}
+
+.market-nav .theme-switch:hover {
+    -fx-background-color: -bidora-surface-hover;
+}
+
+.market-nav .theme-switch .line-icon {
+    -fx-stroke: -bidora-text;
+    -fx-stroke-width: 2;
+}
+
+.market-nav .language-switch {
+    -fx-min-height: 44;
+    -fx-pref-height: 44;
+    -fx-max-height: 44;
+    -fx-padding: 0;
+    -fx-border-width: 1;
+    -fx-min-width: 44;
+    -fx-pref-width: 44;
+    -fx-max-width: 44;
+    -fx-font-weight: bold;
+    -fx-background-color: transparent;
+}
+
+.market-nav .button:focus-visible {
+    -fx-border-color: -bidora-accent;
+}
+
+.market-nav .theme-switch:focus-visible {
+    -fx-border-color: -bidora-accent;
+}
+
+.detail-meta {
+    -fx-background-radius: 10;
+    -fx-padding: 14;
+    -fx-border-width: 1;
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.history-panel {
+    -fx-border-radius: 10;
+    -fx-padding: 16;
+    -fx-border-width: 1;
+    -fx-background-color: -bidora-surface;
+    -fx-border-color: -bidora-border;
+}
+
+.combo-box {
+    -fx-border-width: 1;
+    -fx-background-color: -bidora-surface-soft;
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+}
+
+.chat-window {
+    -fx-background-color: -bidora-canvas;
+}
+
+.chat-masthead {
+    -fx-min-height: 76;
+    -fx-padding: 0 28;
+    -fx-background-color: -bidora-surface;
+    -fx-border-color: transparent transparent -bidora-border transparent;
+}
+
+.chat-brand {
+    -fx-font-size: 21px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidora-text;
+}
+
+.chat-masthead .chat-header {
+    -fx-font-size: 15px;
+    -fx-font-weight: normal;
+    -fx-text-fill: -bidora-muted;
+}
+
+.chat-body {
+    -fx-padding: 24 28 26;
+}
+
+.chat-body .combo-box {
+    -fx-pref-height: 48;
+    -fx-border-width: 1;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-background-color: -bidora-surface;
+    -fx-border-color: -bidora-border;
+}
+
+.chat-body .chat-list {
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 10;
+    -fx-background-color: -bidora-surface;
+    -fx-border-color: -bidora-border;
+}
+
+.chat-body .chat-list .list-cell {
+    -fx-padding: 7 10;
+}
+
+.chat-body .chat-list .list-cell:empty {
+    -fx-padding: 0;
+}
+
+.chat-bubble {
+    -fx-background-radius: 14;
+    -fx-padding: 10 14;
+    -fx-font-size: 13px;
+    -fx-background-color: -bidora-surface-soft;
+    -fx-text-fill: -bidora-text;
+}
+
+.chat-bubble-own {
+    -fx-padding: 10 14;
+    -fx-background-radius: 14;
+    -fx-font-size: 13px;
+    -fx-background-color: -bidora-action;
+    -fx-text-fill: -bidora-on-action;
+}
+
+.chat-empty {
+    -fx-padding: 24;
+}
+
+.chat-empty-icon {
+    -fx-padding: 16;
+    -fx-background-radius: 18;
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.chat-empty-icon .line-icon {
+    -fx-stroke: -bidora-accent;
+}
+
+.chat-empty-copy {
+    -fx-font-size: 14px;
+    -fx-text-alignment: center;
+    -fx-text-fill: -bidora-muted;
+}
+
+.chat-composer {
+    -fx-padding: 8 0 0;
+}
+
+.chat-composer .text-field {
+    -fx-min-height: 48;
+    -fx-border-width: 1;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-background-color: -bidora-surface;
+    -fx-border-color: -bidora-border;
+}
+
+.chat-composer .button.chat-send {
+    -fx-min-height: 48;
+    -fx-min-width: 108;
+    -fx-background-radius: 10;
+}
+
+.chat-send .line-icon {
+    -fx-stroke: -bidora-on-action;
+}
+
+.chat-hint {
+    -fx-padding: 0 4;
+    -fx-text-fill: -bidora-muted;
+}
+
+.button.primary-button:hover {
+    -fx-background-color: -bidora-action-hover;
+}
+
+.product-photo {
+    -fx-background-radius: 10;
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.field-label {
+    -fx-text-fill: -bidora-text;
+}
+
+.auth-root .language-combo {
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: -bidora-text;
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.listing-action {
+    -fx-text-fill: -bidora-accent;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: -bidora-surface-soft;
+}
+
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: -bidora-surface-hover;
+}
+
+.market-nav .nav-sell {
+    -fx-min-width: 172;
+    -fx-pref-width: 172;
+    -fx-max-width: 172;
+}
+
+.market-nav #userArea {
+    -fx-min-width: 276;
+    -fx-pref-width: 276;
+    -fx-max-width: 276;
+}
+
+.market-nav #userArea .button {
+    -fx-min-width: 44;
+    -fx-pref-width: 44;
+    -fx-max-width: 44;
+    -fx-padding: 0;
+}
+
+.market-nav #userArea .account-login {
+    -fx-min-width: 164;
+    -fx-pref-width: 164;
+    -fx-max-width: 164;
+    -fx-background-color: -bidora-surface-soft;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-padding: 8 12;
+}
+
+.market-nav #userArea .menu-button {
+    -fx-min-width: 170;
+    -fx-pref-width: 170;
+    -fx-max-width: 170;
+    -fx-padding: 8 10;
+}
+
+/* Composite controls style their skin surfaces as well as the outer control. */
+.text-area {
+    -fx-padding: 0;
+}
+.text-area > .scroll-pane,
+.text-area > .scroll-pane > .viewport {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+.text-area .content {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 11 13;
+    -fx-background-radius: 5;
+    -fx-effect: null;
+}
+.text-area > .scroll-pane > .corner,
+.text-area .scroll-bar {
+    -fx-background-color: transparent;
+}
+.market-tabs > .tab-content-area,
+.profile-tabs > .tab-content-area {
+    -fx-background-color: transparent;
+    -fx-padding: 12 0 0 0;
+}
+.profile-separation {
+    -fx-padding: 6 0 10 0;
+    -fx-text-fill: -bidora-text;
+    -fx-label-padding: 0 0 0 8;
+    -fx-cursor: hand;
+}
+.profile-separation .box {
+    -fx-min-width: 20;
+    -fx-min-height: 20;
+    -fx-pref-width: 20;
+    -fx-pref-height: 20;
+    -fx-background-insets: 0;
+    -fx-background-color: -bidora-surface-soft;
+    -fx-border-color: -bidora-border;
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
     -fx-border-radius: 4;
+    -fx-padding: 3;
+}
+.profile-separation:hover .box,
+.profile-separation:focus-visible .box {
+    -fx-border-color: -bidora-accent;
+}
+.profile-separation:selected .box {
+    -fx-background-color: -bidora-action;
+    -fx-border-color: -bidora-accent;
+}
+.profile-separation .mark {
+    -fx-background-color: transparent;
+}
+.profile-separation:selected .mark {
+    -fx-background-color: -bidora-on-action;
+}
+.combo-box > .arrow-button {
+    -fx-background-color: transparent;
+}
+.combo-box > .list-cell {
+    -fx-background-color: transparent;
+}
+.combo-box > .arrow-button > .arrow {
+    -fx-background-color: -bidora-muted;
+}
+.market-nav #userArea .account-login:hover {
+    -fx-background-color: -bidora-surface-hover;
+}
+.profile-tabs .profile-avatar {
+    -fx-background-color: -bidora-surface-soft;
+    -fx-background-radius: 42;
+}
+
+/* Fixed icon frames keep labels aligned across language and state changes. */
+.button, .menu-button, .tab-label {
+    -fx-graphic-text-gap: 8;
+}
+.semantic-icon .line-icon {
+    -fx-stroke: -bidora-muted;
+}
+.primary-button .semantic-icon .line-icon {
+    -fx-stroke: -bidora-on-action;
+}
+.danger-button .semantic-icon .line-icon {
+    -fx-stroke: -bidora-danger;
+}
+.tab:selected .semantic-icon .line-icon {
+    -fx-stroke: -bidora-accent;
 }

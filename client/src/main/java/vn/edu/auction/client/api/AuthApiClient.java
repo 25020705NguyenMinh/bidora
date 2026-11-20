@@ -125,6 +125,10 @@ public class AuthApiClient {
         if (status >= 200 && status < 300) {
             return parseBody(response.body(), responseType);
         }
+        if (status == 503 && (response.headers().firstValue("X-Bidora-Error").filter("OTP_DELIVERY_FAILED"::equals).isPresent()
+                || "Không thể gửi email lúc này, vui lòng thử lại sau".equals(extractMessage(response.body())))) {
+            throw new ApiException(ApiException.Type.OTP_DELIVERY, status, null, null);
+        }
         throw toApiException(status, response.body());
     }
 
@@ -165,7 +169,8 @@ public class AuthApiClient {
 
     private String extractMessage(String body) {
         try {
-            String message = objectMapper.readTree(body).path("message").asText(null);
+            var error = objectMapper.readTree(body);
+            String message = error == null ? null : error.path("message").asText(null);
             return (message == null || message.isBlank()) ? null : message;
         } catch (JsonProcessingException e) {
             return null;
@@ -190,6 +195,7 @@ public class AuthApiClient {
             FORBIDDEN,     // 403: tài khoản chưa xác minh / bị khóa
             CONFLICT,      // 409: email đã tồn tại
             RATE_LIMITED,  // 429: xin mã OTP quá nhanh
+            OTP_DELIVERY,
             SERVER,        // 5xx: lỗi phía server
             NETWORK,       // không kết nối được
             TIMEOUT,       // server phản hồi quá lâu
@@ -201,7 +207,7 @@ public class AuthApiClient {
         private final String serverMessage;
 
         public ApiException(Type type, int statusCode, String serverMessage, Throwable cause) {
-            super("API lỗi [" + type + ", HTTP " + statusCode + "]"
+            super("API error [" + type + ", HTTP " + statusCode + "]"
                     + (serverMessage != null ? ": " + serverMessage : ""), cause);
             this.type = type;
             this.statusCode = statusCode;

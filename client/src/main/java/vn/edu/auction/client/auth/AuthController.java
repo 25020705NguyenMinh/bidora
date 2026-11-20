@@ -15,7 +15,6 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
-import javafx.util.StringConverter;
 import vn.edu.auction.client.I18n;
 import vn.edu.auction.client.api.AuthApiClient;
 import vn.edu.auction.client.controller.NavigationController;
@@ -59,7 +58,7 @@ public class AuthController {
 
     @FXML private TextField firstNameField;
     @FXML private TextField lastNameField;
-    @FXML private ComboBox<UserRole> roleComboBox;
+    private Runnable afterProfileReset;
     @FXML private Label firstNameError;
     @FXML private Label lastNameError;
 
@@ -91,10 +90,6 @@ public class AuthController {
     // Thư mục chứa các file FXML của phần auth (tính từ /vn/edu/auction/client/)
     private static final String VIEW_DIR = "/vn/edu/auction/client/fxml/auth/";
 
-    // Nhớ trang hiện tại để đổi ngôn ngữ thì load lại đúng trang.
-    // Mặc định là login vì Main mở trang login đầu tiên.
-    private String currentFxml = "login-view.fxml";
-    private String currentTitleKey = "title.login";
     private boolean busy;
     private int resendSecondsLeft;
 
@@ -119,16 +114,6 @@ public class AuthController {
         }
 
         setupLanguageComboBox();
-        if (roleComboBox != null) {
-            roleComboBox.getItems().setAll(UserRole.BIDDER, UserRole.SELLER);
-            roleComboBox.setConverter(new StringConverter<>() {
-                @Override public String toString(UserRole role) {
-                    return role == null ? "" : I18n.get("role." + role.name());
-                }
-                @Override public UserRole fromString(String value) { return null; }
-            });
-            roleComboBox.setValue(parseRole(RegisterData.role));
-        }
 
         if (emailField != null) {
             emailField.setText(RegisterData.email);
@@ -145,7 +130,7 @@ public class AuthController {
         }
         if (togglePasswordButton != null) {
             togglePasswordButton.setGraphic(passwordIcon(false));
-            togglePasswordButton.setAccessibleText(I18n.get("password.show"));
+            I18n.localize(togglePasswordButton.accessibleTextProperty(), "password.show");
         }
         if (confirmPasswordField != null) {
             confirmPasswordField.textProperty().addListener((obs, oldValue, newValue) ->
@@ -176,6 +161,8 @@ public class AuthController {
         languageComboBox.getItems().setAll(LANG_VI, LANG_EN);
         languageComboBox.setValue(I18n.isVietnamese() ? LANG_VI : LANG_EN);
         languageComboBox.setOnAction(e -> handleLanguageChange());
+        I18n.onChange(languageComboBox, () ->
+                languageComboBox.setValue(I18n.isVietnamese() ? LANG_VI : LANG_EN));
     }
 
     private void handleLanguageChange() {
@@ -189,17 +176,7 @@ public class AuthController {
 
         I18n.setLocale(selected);
 
-        AuthController next = switchView(currentFxml, currentTitleKey);
-        if (next == null) return;
-        if (emailField != null) next.emailField.setText(emailField.getText());
-        if (passwordField != null) next.passwordField.setText(passwordField.getText());
-        if (firstNameField != null) next.firstNameField.setText(firstNameField.getText());
-        if (lastNameField != null) next.lastNameField.setText(lastNameField.getText());
-        if (roleComboBox != null) next.roleComboBox.setValue(roleComboBox.getValue());
-        if (otpBoxes != null) {
-            for (int i = 0; i < otpBoxes.length; i++) next.otpBoxes[i].setText(otpBoxes[i].getText());
-            next.startResendCountdown(resendSecondsLeft);
-        }
+
     }
 
     // ====================================================================
@@ -245,7 +222,7 @@ public class AuthController {
     private void onLoginSuccess(AuthResponse response) {
         Stage stage = findStage();
         if (stage == null) {
-            showMessage(I18n.get("error.openView"));
+            showLocalizedMessage("error.openView");
             return;
         }
         if (!stage.isShowing()) {
@@ -300,7 +277,7 @@ public class AuthController {
                 try {
                     String query = exchange.getRequestURI().getQuery();
                     String token = null;
-                    String name = "Người dùng"; // Tên mặc định nếu không lấy được
+                    String name = I18n.get("account.user"); // Tên mặc định nếu không lấy được
 
                     // Tách lấy token và name từ URL
                     if (query != null) {
@@ -315,10 +292,10 @@ public class AuthController {
                     }
 
                     // Trả về HTML báo cho người dùng tắt trình duyệt
-                    String htmlResponse = "<html><head><title>Thành công</title></head>"
+                    String htmlResponse = I18n.get("oauth.pageTitle")
                             + "<body style='text-align:center; padding-top:50px; font-family:Arial;'>"
-                            + "<h2 style='color:#4CAF50;'>Đăng nhập thành công!</h2>"
-                            + "<p>Bạn có thể đóng cửa sổ này và quay lại ứng dụng Bidora.</p>"
+                            + I18n.get("oauth.done")
+                            + I18n.get("oauth.return")
                             + "</body></html>";
 
                     byte[] responseBytes = htmlResponse.getBytes(java.nio.charset.StandardCharsets.UTF_8);
@@ -330,7 +307,7 @@ public class AuthController {
                         AuthResponse me = fromJwt(token, name);
                         Platform.runLater(() -> {
                             if (me == null) {
-                                showMessage("Không đọc được thông tin tài khoản. Vui lòng thử lại.");
+                                showLocalizedMessage("oauth.invalid");
                             } else {
                                 onLoginSuccess(me);
                             }
@@ -346,8 +323,8 @@ public class AuthController {
             System.out.println("Local Callback Server started on port 8081");
 
         } catch (Exception e) {
-            LOG.log(System.Logger.Level.ERROR, "Lỗi khởi tạo trạm nhận đăng nhập Google", e);
-            Platform.runLater(() -> showMessage("Lỗi khởi tạo trạm nhận đăng nhập."));
+            LOG.log(System.Logger.Level.ERROR, "Loi khoi tao tram nhan dang nhap Google", e);
+            Platform.runLater(() -> showLocalizedMessage("oauth.callback"));
         }
     }
 
@@ -384,19 +361,20 @@ public class AuthController {
                 java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
             } else {
                 // Dự phòng nếu hệ thống không hỗ trợ AWT Desktop
-                Runtime runtime = Runtime.getRuntime();
-                String os = System.getProperty("os.name").toLowerCase();
+                String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
                 if (os.contains("win")) {
-                    runtime.exec("rundll32 url.dll,FileProtocolHandler " + url);
+                    new ProcessBuilder("rundll32", "url.dll,FileProtocolHandler", url).start();
                 } else if (os.contains("mac")) {
-                    runtime.exec("open " + url);
+                    new ProcessBuilder("open", url).start();
                 } else if (os.contains("nix") || os.contains("nux")) {
-                    runtime.exec("xdg-open " + url);
+                    new ProcessBuilder("xdg-open", url).start();
+                } else {
+                    throw new IOException("Unsupported browser launcher on " + os);
                 }
             }
         } catch (Exception e) {
-            LOG.log(System.Logger.Level.ERROR, "Không thể mở trang đăng nhập mạng xã hội", e);
-            showMessage("Không thể mở trình duyệt đăng nhập.");
+            LOG.log(System.Logger.Level.ERROR, "Khong the mo trang dang nhap mang xa hoi", e);
+            showLocalizedMessage("oauth.browser");
         }
     }
 
@@ -428,16 +406,13 @@ public class AuthController {
 
         String fullName = firstNameField.getText().trim() + " " + lastNameField.getText().trim();
         String email = RegisterData.email.trim();
-        UserRole selectedRole = roleComboBox == null || roleComboBox.getValue() == null
-                ? UserRole.BIDDER : roleComboBox.getValue();
-        RegisterData.role = selectedRole.name();
 
         // Dùng đúng RegisterRequest trong module shared để gửi cho server.
         RegisterRequest request = new RegisterRequest(
                 fullName,
                 email,
                 passwordField.getText(),
-                selectedRole);
+                UserRole.BIDDER);
 
         runAsync(() -> AUTH_API.register(request), response -> onRegisterSuccess(email));
     }
@@ -459,23 +434,13 @@ public class AuthController {
         switchView("otp-verification-view.fxml", "title.otpMethod");
     }
 
-    // RegisterData.role là chuỗi. Chuyển sang enum của shared.
-    // VÌ SAO có nhánh dự phòng: nếu chuỗi lạ , vẫn đăng ký được với vai trò
-    // mặc định BIDDER thay vì văng lỗi. Server cũng cấm tự đăng ký ADMIN.
-    private UserRole parseRole(String role) {
-        try {
-            return UserRole.valueOf(role);
-        } catch (IllegalArgumentException | NullPointerException e) {
-            return UserRole.BIDDER;
-        }
-    }
 
     // ====================================================================
     // 6. GỌI API Ở LUỒNG NỀN  [MỚI]
     // ====================================================================
     private <T> void runAsync(Callable<T> apiCall, Consumer<T> onSuccess) {
         if (busy) return;
-        showMessage(I18n.get("message.loading"));
+        showLocalizedMessage("message.loading");
         messageLabel.getStyleClass().add("pending");
         setBusy(true);
 
@@ -496,7 +461,9 @@ public class AuthController {
 
         task.setOnFailed(e -> {
             setBusy(false);
-            showMessage(describeError(task.getException()));
+            showMessage("");
+            Throwable error = task.getException();
+            I18n.track(messageLabel.textProperty(), () -> describeError(error));
         });
 
         Thread thread = new Thread(task, "auth-api-call");
@@ -521,17 +488,18 @@ public class AuthController {
     }
 
     private String describeError(Throwable error) {
-        LOG.log(System.Logger.Level.WARNING, "Gọi API xác thực thất bại", error);
+        LOG.log(System.Logger.Level.WARNING, "Goi API xac thuc that bai", error);
 
         if (error instanceof AuthApiClient.ApiException apiError) {
-            String serverMessage = apiError.getServerMessage();
+            String serverMessage = I18n.isVietnamese() ? apiError.getServerMessage() : null;
             return switch (apiError.getType()) {
                 // Các lỗi mà câu của server cụ thể hơn: sai OTP (còn mấy lần thử), chờ bao lâu, chưa xác minh...
                 case BAD_REQUEST -> serverMessage != null ? serverMessage : I18n.get("error.badRequest");
                 case FORBIDDEN -> serverMessage != null ? serverMessage : I18n.get("error.forbidden");
-                case RATE_LIMITED -> serverMessage != null ? serverMessage : I18n.get("error.unknown");
+                case RATE_LIMITED -> serverMessage != null ? serverMessage : I18n.get("error.throttle");
                 case UNAUTHORIZED -> I18n.get("error.login.invalid");
                 case CONFLICT -> I18n.get("error.email.exists");
+                case OTP_DELIVERY -> I18n.get("error.otp.delivery");
                 case SERVER -> I18n.get("error.server");
                 case NETWORK -> I18n.get("error.network");
                 case TIMEOUT -> I18n.get("error.timeout");
@@ -555,7 +523,6 @@ public class AuthController {
 
         // Gọi API Server gửi OTP tới email
         runAsync(() -> AUTH_API.forgotPassword(email), response -> {
-            showSuccess(response.getMessage());
             openOtpVerification(); // Chuyển sang Màn hình OTP
         });
     }
@@ -569,7 +536,7 @@ public class AuthController {
 
         if (!passOk) return;
         if (!newPassword.equals(confirmPassword)) {
-            showFieldError(confirmPasswordError, confirmPasswordField, I18n.get("error.password.mismatch"));
+            showFieldError(confirmPasswordError, confirmPasswordField, "error.password.mismatch");
             return;
         }
 
@@ -579,8 +546,13 @@ public class AuthController {
         // Gọi API gửi Email + OTP + Pass mới lên Server để cập nhật DB
         runAsync(() -> AUTH_API.resetPassword(email, otp, newPassword), response -> {
             RegisterData.reset();
+            if (afterProfileReset != null) {
+                findStage().close();
+                afterProfileReset.run();
+                return;
+            }
             AuthController login = switchView("login-view.fxml", "title.login");
-            if (login != null) login.showSuccess(response.getMessage());
+            if (login != null) login.showSuccess("account.resetDone");
         });
     }
     /** Nút Tiếp tục trên màn hình OTP (khớp onAction="#onContinue" trong FXML). */
@@ -590,7 +562,7 @@ public class AuthController {
         showMessage("");
         String code = getOtpCode();
         if (code.length() != 6) {
-            showMessage(I18n.get("error.otp.incomplete"));
+            showLocalizedMessage("error.otp.incomplete");
             return;
         }
 
@@ -613,6 +585,11 @@ public class AuthController {
     @FXML
     private void openLoginView() {
         RegisterData.reset();
+        if (afterProfileReset != null) {
+            if (resendTimer != null) resendTimer.stop();
+            findStage().close();
+            return;
+        }
         switchView("login-view.fxml", "title.login");
     }
 
@@ -635,6 +612,12 @@ public class AuthController {
         switchView("reset-password-view.fxml", "title.reset");
     }
 
+    public void startProfileReset(String email, Runnable onSuccess) {
+        emailField.setText(email);
+        emailField.setEditable(false);
+        afterProfileReset = onSuccess;
+    }
+
     private AuthController switchView(String fxmlFile, String titleKey) {
         try {
             Stage stage = findStage();
@@ -643,15 +626,14 @@ public class AuthController {
             }
             FXMLLoader loader = new FXMLLoader(getClass().getResource(VIEW_DIR + fxmlFile), I18n.getBundle());
             stage.getScene().setRoot(loader.load());
-            stage.setTitle(I18n.get(titleKey));
+            I18n.localize(stage.titleProperty(), titleKey);
             AuthController next = loader.getController();
-            next.currentFxml = fxmlFile;
-            next.currentTitleKey = titleKey;
+            next.afterProfileReset = afterProfileReset;
             if (resendTimer != null) resendTimer.stop();
             return next;
         } catch (IOException e) {
-            LOG.log(System.Logger.Level.ERROR, "Không mở được màn hình " + fxmlFile, e);
-            showMessage(I18n.get("error.openView"));
+            LOG.log(System.Logger.Level.ERROR, "Khong mo duoc man hinh " + fxmlFile, e);
+            showLocalizedMessage("error.openView");
             return null;
         }
     }
@@ -687,7 +669,7 @@ public class AuthController {
         passwordVisibleField.setManaged(passwordVisible);
 
         togglePasswordButton.setGraphic(passwordIcon(passwordVisible));
-        togglePasswordButton.setAccessibleText(I18n.get(passwordVisible ? "password.hide" : "password.show"));
+        I18n.localize(togglePasswordButton.accessibleTextProperty(), passwordVisible ? "password.hide" : "password.show");
 
         TextField shown = passwordVisible ? passwordVisibleField : passwordField;
         shown.requestFocus();
@@ -701,11 +683,11 @@ public class AuthController {
         String email = emailField.getText().trim();
 
         if (email.isEmpty()) {
-            showFieldError(emailError, emailField, I18n.get("error.email.empty"));
+            showFieldError(emailError, emailField, "error.email.empty");
             return false;
         }
         if (!EMAIL_PATTERN.matcher(email).matches()) {
-            showFieldError(emailError, emailField, I18n.get("error.email.invalid"));
+            showFieldError(emailError, emailField, "error.email.invalid");
             return false;
         }
         return true;
@@ -716,11 +698,11 @@ public class AuthController {
         String password = passwordField.getText();
 
         if (password.isEmpty()) {
-            showFieldError(passwordError, passwordContainer, I18n.get("error.password.empty"));
+            showFieldError(passwordError, passwordContainer, "error.password.empty");
             return false;
         }
         if (checkLength && password.length() < 6) {
-            showFieldError(passwordError, passwordContainer, I18n.get("error.password.short"));
+            showFieldError(passwordError, passwordContainer, "error.password.short");
             return false;
         }
         return true;
@@ -728,15 +710,15 @@ public class AuthController {
 
     private boolean validateRequired(TextField field, Label errorLabel, String messageKey) {
         if (field.getText().trim().isEmpty()) {
-            showFieldError(errorLabel, field, I18n.get(messageKey));
+            showFieldError(errorLabel, field, messageKey);
             return false;
         }
         return true;
     }
 
-    private void showFieldError(Label errorLabel, Node field, String message) {
+    private void showFieldError(Label errorLabel, Node field, String key) {
         if (errorLabel != null) {
-            errorLabel.setText(message);
+            I18n.localize(errorLabel.textProperty(), key);
             errorLabel.setVisible(true);
             errorLabel.setManaged(true);
         }
@@ -758,6 +740,11 @@ public class AuthController {
     }
 
     // [SỬA] Thông báo lỗi: trả về kiểu mặc định (đỏ theo CSS)
+    private void showLocalizedMessage(String key) {
+        showMessage("");
+        if (messageLabel != null) I18n.localize(messageLabel.textProperty(), key);
+    }
+
     private void showMessage(String message) {
         if (messageLabel != null) {
             messageLabel.getStyleClass().removeAll("pending", "success");
@@ -766,9 +753,9 @@ public class AuthController {
     }
 
     // [MỚI] Thông báo thành công: đổi sang màu xanh lá
-    private void showSuccess(String message) {
+    private void showSuccess(String key) {
         if (messageLabel != null) {
-            showMessage(message);
+            showLocalizedMessage(key);
             messageLabel.getStyleClass().add("success");
         }
     }
@@ -877,14 +864,14 @@ public class AuthController {
         if (RegisterData.isResetPasswordFlow) {
             // Luồng Quên mật khẩu: Gọi lại API forgotPassword để phát lại OTP
             runAsync(() -> AUTH_API.forgotPassword(email), response -> {
-                showSuccess(I18n.get("otp.resent"));
+                showSuccess("otp.resent");
                 clearOtpBoxes();
                 startResendCountdown(RESEND_SECONDS);
             });
         } else {
             // Luồng Đăng ký: Gọi API resendOtp như bình thường
             runAsync(() -> AUTH_API.resendOtp(email), response -> {
-                showSuccess(I18n.get("otp.resent"));
+                showSuccess("otp.resent");
                 clearOtpBoxes();
                 startResendCountdown(RESEND_SECONDS);
             });

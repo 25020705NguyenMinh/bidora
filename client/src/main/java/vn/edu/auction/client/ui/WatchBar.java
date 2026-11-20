@@ -1,5 +1,7 @@
 package vn.edu.auction.client.ui;
 
+import vn.edu.auction.client.I18n;
+
 import java.util.List;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -37,7 +39,7 @@ public final class WatchBar extends HBox {
         if (!SessionData.getInstance().isLoggedIn()) {
             watchBtn.setDisable(true);
             muteBtn.setDisable(true);
-            watchBtn.setTooltip(new Tooltip("Đăng nhập để theo dõi phiên này"));
+            watchBtn.setTooltip(new Tooltip(I18n.get("watch.login")));
             return;
         }
         watchBtn.setOnAction(e -> pushWatch(!watching, muted));
@@ -87,11 +89,11 @@ public final class WatchBar extends HBox {
     }
 
     private void refreshText() {
-        watchBtn.setText(watchBusy ? "Đang tải…" : watching ? "Đang theo dõi" : "Theo dõi sản phẩm");
+        watchBtn.setText(watchBusy ? I18n.get("common.loading") : watching ? I18n.get("watch.watching") : I18n.get("watch.add"));
         watchBtn.setDisable(watchBusy);
-        muteBtn.setText(muted ? "Bật thông báo" : "Tắt thông báo");
+        muteBtn.setText(muted ? I18n.get("watch.unmute") : I18n.get("watch.mute"));
         muteBtn.setDisable(watchBusy || !watching);
         followBtn.setDisable(followBusy);
-        followBtn.setText(following ? "Đang theo dõi người bán" : "Theo dõi người bán");
+        followBtn.setText(following ? I18n.get("watch.following") : I18n.get("watch.follow"));
     }
 }

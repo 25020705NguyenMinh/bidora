@@ -6,21 +6,28 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 import vn.edu.auction.client.api.BaseApiClient;
 import vn.edu.auction.shared.dto.AuctionResponse;
 import vn.edu.auction.shared.dto.BidResponse;
 import vn.edu.auction.shared.dto.ExtraDto.*;
 import vn.edu.auction.shared.dto.ItemResponse;
+import vn.edu.auction.shared.dto.TradingProfiles;
 import vn.edu.auction.shared.enums.*;
 
 /** In-memory account for reviewing the desktop UI through its normal REST calls. */
 public final class PreviewServer {
+    private static HttpServer runningServer;
+    private static ExecutorService workers;
+
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread(PreviewServer::stop, "preview-shutdown"));
+    }
     private final List<ItemResponse> items = new ArrayList<>();
     private final List<AuctionResponse> auctions = new ArrayList<>();
     private final List<BidResponse> bids = new ArrayList<>();
@@ -29,6 +36,7 @@ public final class PreviewServer {
     private BigDecimal balance = new BigDecimal("2500000");
     private boolean watching, muted, following;
     private String name = "Tài khoản xem thử", phone = "", address = "";
+    private TradingProfiles profiles;
 
     private PreviewServer() {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
@@ -40,20 +48,41 @@ public final class PreviewServer {
                 items.get(0).getStartingPrice(), null, now.minusHours(1), now.plusDays(2), AuctionStatus.RUNNING));
         auctions.add(new AuctionResponse(22L, 12L, items.get(1).getName(), items.get(1).getStartingPrice(),
                 items.get(1).getStartingPrice(), null, now.plusHours(1), now.plusDays(3), AuctionStatus.OPEN));
+        auctions.forEach(a -> a.setSellerId(2L));
     }
 
-    public static int start() throws IOException {
+    public static synchronized int start() throws IOException {
+        if (runningServer != null) return runningServer.getAddress().getPort();
         PreviewServer preview = new PreviewServer();
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/api/", preview::handle);
-        server.setExecutor(Executors.newCachedThreadPool(r -> {
+        ExecutorService executor = Executors.newCachedThreadPool(r -> {
             Thread thread = new Thread(r, "bidora-preview");
             thread.setDaemon(true);
             return thread;
-        }));
-        server.start();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> server.stop(0)));
+        });
+        server.setExecutor(executor);
+        try {
+            server.start();
+        } catch (RuntimeException ex) {
+            server.stop(0);
+            executor.shutdownNow();
+            throw ex;
+        }
+        runningServer = server;
+        workers = executor;
         return server.getAddress().getPort();
+    }
+
+    public static synchronized void stop() {
+        if (runningServer != null) {
+            runningServer.stop(0);
+            runningServer = null;
+        }
+        if (workers != null) {
+            workers.shutdownNow();
+            workers = null;
+        }
     }
 
     private synchronized void handle(HttpExchange exchange) throws IOException {
@@ -63,7 +92,21 @@ public final class PreviewServer {
         Object result;
         int status = 200;
         try {
-            if (path.equals("/api/admin/items") && method.equals("GET")) result = items;
+            if (path.equals("/api/items") && method.equals("POST")) {
+                ItemResponse item = new ItemResponse((long) items.size() + 100, 1L, body.path("name").asText(),
+                        body.path("description").asText(), body.path("startingPrice").decimalValue(), ItemStatus.DRAFT);
+                item.setImage(body.path("image").asText(""));
+                items.add(item);
+                result = item;
+            } else if (path.matches("/api/items/\\d+") && method.equals("PUT")) {
+                long id = Long.parseLong(path.split("/")[3]);
+                ItemResponse item = items.stream().filter(i -> i.getId().equals(id)).findFirst().orElseThrow();
+                item.setName(body.path("name").asText());
+                item.setDescription(body.path("description").asText());
+                item.setStartingPrice(body.path("startingPrice").decimalValue());
+                item.setImage(body.path("image").asText(""));
+                result = item;
+            } else if (path.equals("/api/admin/items") && method.equals("GET")) result = items;
             else if (path.matches("/api/admin/items/\\d+/approve") && method.equals("POST")) {
                 long id = Long.parseLong(path.split("/")[4]);
                 items.stream().filter(i -> i.getId() == id).findFirst().ifPresent(i -> i.setStatus(ItemStatus.ACTIVE));
@@ -83,6 +126,21 @@ public final class PreviewServer {
             else if (path.startsWith("/api/items/") && method.equals("GET")) {
                 long id = Long.parseLong(path.substring("/api/items/".length()));
                 result = items.stream().filter(i -> i.getId() == id).findFirst().orElseThrow();
+            } else if (path.equals("/api/auctions") && method.equals("POST")) {
+                long itemId = body.path("itemId").asLong();
+                ItemResponse item = items.stream().filter(i -> i.getId().equals(itemId)).findFirst().orElseThrow();
+                if (item.getStatus() != ItemStatus.ACTIVE) {
+                    send(exchange, 409, java.util.Map.of("message", "Product must be approved."));
+                    return;
+                }
+                AuctionResponse auction = new AuctionResponse((long) auctions.size() + 100, itemId, item.getName(),
+                        item.getStartingPrice(), item.getStartingPrice(), null,
+                        LocalDateTime.parse(body.path("startTime").asText()),
+                        LocalDateTime.parse(body.path("endTime").asText()), AuctionStatus.RUNNING);
+                auction.setImage(item.getImage());
+                auction.setSellerId(item.getSellerId());
+                auctions.add(auction);
+                result = auction;
             } else if (path.equals("/api/auctions") && method.equals("GET")) result = auctions;
             else if (path.matches("/api/auctions/\\d+") && method.equals("GET")) {
                 long id = Long.parseLong(path.split("/")[3]);
@@ -122,6 +180,13 @@ public final class PreviewServer {
                 transactions.add(new WalletTxResponse((long) transactions.size() + 1,
                         deposit ? "DEPOSIT" : "WITHDRAW", amount, balance, LocalDateTime.now(ZoneOffset.UTC)));
                 result = new WalletResponse(balance);
+            } else if (path.equals("/api/me/trading-profiles") && method.equals("PUT")) {
+                profiles = BaseApiClient.MAPPER.treeToValue(body, TradingProfiles.class);
+                result = profiles;
+            } else if (path.equals("/api/me/trading-profiles") && method.equals("GET")) result = myTradingProfiles();
+            else if (path.matches("/api/users/[12]/profile/(buyer|seller)") && method.equals("GET")) {
+                result = path.startsWith("/api/users/1/") ? myTradingProfiles().publicCard(path.endsWith("/seller"))
+                        : new TradingProfiles.Card("Người bán mẫu", "", "");
             } else if (path.equals("/api/me/profile") && method.equals("GET")) result = profile();
             else if (path.equals("/api/me/profile") && method.equals("PUT")) {
                 name = body.path("fullName").asText(name);
@@ -153,6 +218,12 @@ public final class PreviewServer {
             status = 400;
         }
         send(exchange, status, result);
+    }
+
+    private TradingProfiles myTradingProfiles() {
+        if (profiles != null) return profiles;
+        var common = new TradingProfiles.Card(name, "", "");
+        return new TradingProfiles(false, common, common);
     }
 
     private ProfileResponse profile() {

@@ -1,7 +1,8 @@
 package vn.edu.auction.client.browse;
 
+import vn.edu.auction.client.I18n;
+
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.HashMap;
@@ -70,7 +71,7 @@ public class AuctionListController extends CatalogController {
         boolean loggedIn = SessionData.getInstance().isLoggedIn();
         auctions.clear();
         visibleCards.clear();
-        prepareLoad(true, "Đang tải phiên đấu giá…");
+        prepareLoad(true, "auction.loading");
         if (!loggedIn) {
             if (unsubscribe != null) { unsubscribe.run(); unsubscribe = null; }
         }
@@ -80,7 +81,7 @@ public class AuctionListController extends CatalogController {
             auctions.setAll(list);
             renderCards();
         }, err -> {
-            if (version == loadVersion) showLoadError(BaseApiClient.describe(err));
+            if (version == loadVersion) showLoadError(err);
         });
     }
 
@@ -90,12 +91,13 @@ public class AuctionListController extends CatalogController {
         visibleCards.clear();
         for (AuctionResponse a : auctions) {
             if (a.getItemName() == null || !a.getItemName().toLowerCase(Locale.ROOT).contains(keyword)) continue;
-            MarketCard card = new MarketCard(a.getItemName(), "Giá hiện tại", status(a.getStatus()),
-                    money(a.getCurrentPrice()), "Kết thúc " + UiKit.dt(a.getEndTime()), "Xem phiên", () -> openFeatured(a));
+            MarketCard card = new MarketCard(a.getItemName(), I18n.get("auction.currentPrice"), status(a.getStatus()),
+                    UiKit.money(a.getCurrentPrice()), I18n.get("auction.endsPrefix", UiKit.dt(a.getEndTime())), I18n.get("auction.open"), () -> openFeatured(a));
+            card.setProductImage(a.getImage(), a.getItemName());
             visibleCards.put(a.getId(), card);
             grid.getChildren().add(card);
         }
-        showResultCount(visibleCards.size(), "phiên đấu giá");
+        showResultCount(visibleCards.size(), "auction");
     }
 
     private void onAuctionEvent(AuctionRealtimeClient.Event ev) {
@@ -107,7 +109,7 @@ public class AuctionListController extends CatalogController {
             a.setStatus(ev.status());
             a.setEndTime(ev.endTime());
             MarketCard card = visibleCards.get(a.getId());
-            if (card != null) card.updateQuote(status(a.getStatus()), money(a.getCurrentPrice()), "Kết thúc " + UiKit.dt(a.getEndTime()));
+            if (card != null) card.updateQuote(status(a.getStatus()), UiKit.money(a.getCurrentPrice()), I18n.get("auction.endsPrefix", UiKit.dt(a.getEndTime())));
             auctions.set(i, a);
             return;
         }
@@ -121,20 +123,28 @@ public class AuctionListController extends CatalogController {
         if (grid.getScene() == null) return;
         Dialog<Void> detail = new Dialog<>();
         detail.initOwner(grid.getScene().getWindow());
-        detail.setTitle("Chi tiết phiên đấu giá");
+        I18n.localize(detail.titleProperty(), "auction.details");
         detail.setHeaderText(selected.getItemName());
 
         Label id = new Label();
         id.getStyleClass().add("detail-caption");
-        Label caption = new Label("Giá hiện tại");
+        Label caption = I18n.caption(new Label(), "auction.currentPrice");
         caption.getStyleClass().add("detail-caption");
         Label price = new Label();
         price.getStyleClass().add("detail-price");
         VBox priceBlock = new VBox(4, caption, price);
-        Label starting = new Label("Giá khởi điểm    " + money(selected.getStartingPrice()));
-        Label leader = new Label();
+        Label starting = new Label(I18n.get("auction.startingPrice", UiKit.money(selected.getStartingPrice())));
+        var leader = new javafx.scene.control.Hyperlink();
+        leader.setOnAction(e -> vn.edu.auction.client.ui.TradingProfileDialog.show(
+                leader.getScene().getWindow(), selected.getHighestBidderId(), false));
         Label end = new Label();
         VBox metadata = new VBox(10, starting, leader, end);
+        if (selected.getSellerId() != null) {
+            var seller = I18n.caption(new javafx.scene.control.Hyperlink(), "profile.seller");
+            seller.setOnAction(e -> vn.edu.auction.client.ui.TradingProfileDialog.show(
+                    seller.getScene().getWindow(), selected.getSellerId(), true));
+            metadata.getChildren().add(seller);
+        }
         metadata.getStyleClass().add("detail-meta");
         Label note = new Label();
         note.getStyleClass().add("detail-note");
@@ -143,29 +153,31 @@ public class AuctionListController extends CatalogController {
 
         // Ô đặt giá
         TextField amountField = new TextField(draft);
-        amountField.setPromptText("Nhập giá bạn muốn đặt (đ)");
+        I18n.localize(amountField.promptTextProperty(), "auction.bidPrompt");
         HBox.setHgrow(amountField, Priority.ALWAYS);
-        Button bidButton = new Button("Đặt giá");
+        Button bidButton = I18n.caption(new Button(), "auction.bid");
         bidButton.getStyleClass().add("primary-button");
         HBox bidRow = new HBox(8, amountField, bidButton);
         bidRow.setAlignment(Pos.CENTER_LEFT);
 
         // Hiển thị trạng thái hiện tại của phiên (dùng chung cho dữ liệu ban đầu và event realtime)
         java.util.function.Consumer<AuctionResponse> render = a -> {
-            id.setText("PHIÊN #" + a.getId() + "   •   " + status(a.getStatus()));
-            price.setText(money(a.getCurrentPrice()));
-            leader.setText("Người dẫn đầu    " + (a.getHighestBidderId() == null ? "—" : "#" + a.getHighestBidderId()));
-            end.setText("Kết thúc              " + UiKit.dt(a.getEndTime()));
+            id.setText(I18n.get("auction.number") + a.getId() + "   •   " + status(a.getStatus()));
+            price.setText(UiKit.money(a.getCurrentPrice()));
+            leader.setText(I18n.get("auction.leader", a.getHighestBidderId() == null ? "—" : "#" + a.getHighestBidderId()));
+            leader.setDisable(a.getHighestBidderId() == null);
+            end.setText(I18n.get("auction.ends", UiKit.dt(a.getEndTime())));
             boolean active = a.getStatus() == AuctionStatus.RUNNING || a.getStatus() == AuctionStatus.OPEN;
             bidRow.setDisable(!active);
             if (!active) note.setText(a.getStatus() == AuctionStatus.CANCELED
-                    ? "Phiên đã bị quản trị viên dừng." : "Phiên đã kết thúc.");
+                    ? I18n.get("auction.stopped") : I18n.get("auction.finished"));
         };
         render.accept(selected);
+        I18n.onChange(price, () -> render.accept(selected));
 
         Runnable loadHistory = () -> FxAsync.run(() -> bidApi.getBidHistory(selected.getId()), (List<BidResponse> list) ->
                 historyHolder.getChildren().setAll(new BidHistoryChart(selected.getStartingPrice(), selected.getStartTime(), list, false)),
-                err -> note.setText(BaseApiClient.describe(err)));
+                err -> I18n.track(note.textProperty(), () -> BaseApiClient.describe(err)));
         loadHistory.run();
 
         bidButton.setOnAction(e -> {
@@ -178,7 +190,7 @@ public class AuctionListController extends CatalogController {
                         if (!detail.isShowing()) return;
                         detail.close();
                         openAuction(current, amountField.getText());
-                    }, err -> { bidButton.setDisable(false); note.setText(BaseApiClient.describe(err)); });
+                    }, err -> { bidButton.setDisable(false); I18n.track(note.textProperty(), () -> BaseApiClient.describe(err)); });
                 });
                 return;
             }
@@ -186,7 +198,7 @@ public class AuctionListController extends CatalogController {
             try {
                 amount = new BigDecimal(amountField.getText().trim());
             } catch (NumberFormatException ex) {
-                note.setText("Số tiền không hợp lệ.");
+                I18n.localize(note.textProperty(), "auction.invalidBid");
                 return;
             }
             bidButton.setDisable(true);
@@ -194,20 +206,20 @@ public class AuctionListController extends CatalogController {
                     res -> {
                         bidButton.setDisable(false);
                         amountField.clear();
-                        note.setText(res.getMessage());
+                        I18n.localize(note.textProperty(), "auction.bidAccepted");
                         if (SessionData.getInstance().isPreviewMode()) {
                             selected.setCurrentPrice(res.getAmount());
                             selected.setHighestBidderId(res.getBidderId());
                             render.accept(selected);
                             MarketCard card = visibleCards.get(selected.getId());
                             if (card != null) card.updateQuote(status(selected.getStatus()),
-                                    money(selected.getCurrentPrice()), "Kết thúc " + UiKit.dt(selected.getEndTime()));
+                                    UiKit.money(selected.getCurrentPrice()), I18n.get("auction.endsPrefix", UiKit.dt(selected.getEndTime())));
                             int index = auctions.indexOf(selected);
                             if (index >= 0) auctions.set(index, selected);
                         }
                         loadHistory.run();
                     },
-                    err -> { bidButton.setDisable(false); note.setText(BaseApiClient.describe(err)); });
+                    err -> { bidButton.setDisable(false); I18n.track(note.textProperty(), () -> BaseApiClient.describe(err)); });
         });
 
         // Realtime trong dialog: giá, người dẫn đầu, giờ kết thúc (gia hạn chống sniping), lịch sử bid
@@ -222,7 +234,7 @@ public class AuctionListController extends CatalogController {
         });
         detail.setOnHidden(e -> unsub.run());
 
-        var photo = MarketCard.photo(MarketCard.illustrationIndex(selected.getItemName()), 210);
+        var photo = vn.edu.auction.client.ui.ProductPhoto.view(selected.getImage(), selected.getItemName(), 210);
         photo.setPrefWidth(230);
         photo.setMinWidth(200);
         photo.getStyleClass().add("detail-photo");
@@ -240,20 +252,20 @@ public class AuctionListController extends CatalogController {
         detail.getDialogPane().setContent(scroll);
         detail.setResizable(true);
         vn.edu.auction.client.ui.UiTheme.apply(detail.getDialogPane());
-        ButtonType close = new ButtonType("Đóng", ButtonBar.ButtonData.CANCEL_CLOSE);
+        vn.edu.auction.client.ui.UiMotion.install(detail);
+        ButtonType close = new ButtonType(I18n.get("common.close"), ButtonBar.ButtonData.CANCEL_CLOSE);
         detail.getDialogPane().getButtonTypes().add(close);
         detail.show();
     }
 
-    private static String money(BigDecimal value) { return value == null ? "—" : NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(value) + " đ"; }
     private static String status(AuctionStatus value) {
         if (value == null) return "—";
         return switch (value) {
-            case RUNNING -> "Đang diễn ra";
-            case OPEN -> "Sắp diễn ra";
-            case FINISHED -> "Đã kết thúc";
-            case PAID -> "Đã thanh toán";
-            case CANCELED -> "Đã hủy";
+            case RUNNING -> I18n.get("status.live");
+            case OPEN -> I18n.get("status.upcoming");
+            case FINISHED -> I18n.get("status.ended");
+            case PAID -> I18n.get("status.paid");
+            case CANCELED -> I18n.get("status.cancelled");
         };
     }
 }

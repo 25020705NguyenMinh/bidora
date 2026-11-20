@@ -3,6 +3,10 @@ package vn.edu.auction.shared.dto;
 import java.math.BigDecimal;
 
 public class ItemRequest {
+    private String image;
+    public String getImage() { return image; }
+    public void setImage(String image) { this.image = image; }
+
 
     private String name;
     private String description;

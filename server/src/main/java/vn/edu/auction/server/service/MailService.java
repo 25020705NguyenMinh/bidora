@@ -32,7 +32,7 @@ public class MailService {
 
         if (sender == null) {
             // CHỈ dành cho dev. Khi chạy thật phải cấu hình SMTP để mã không nằm trong log.
-            log.warn("[DEV] Chưa cấu hình SMTP. Mã OTP của {} là: {}", to, code);
+            log.warn("[DEV] Chua cau hinh SMTP. Ma OTP cua {} la: {}", to, code);
             return;
         }
 
@@ -48,7 +48,7 @@ public class MailService {
             sender.send(message);
         } catch (MailException e) {
             // Ghi chi tiết ở log server, người dùng chỉ nhận câu chung (không lộ thông tin SMTP)
-            log.error("Gửi email OTP tới {} thất bại", to, e);
+            log.error("Gui email OTP toi {} that bai", to, e);
             throw new EmailSendException(e);
         }
     }

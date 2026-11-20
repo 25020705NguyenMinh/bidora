@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import vn.edu.auction.client.I18n?>
+<?import vn.edu.auction.client.ui.AppearanceControls?>
+<?import vn.edu.auction.client.ui.UiIcon?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="vn.edu.auction.client.browse.BrowseController" styleClass="market-shell">
     <top>
-        <HBox alignment="CENTER_LEFT" spacing="20" styleClass="market-nav">
+        <HBox alignment="CENTER_LEFT" spacing="12" styleClass="market-nav">
             <Label text="Bidora." styleClass="market-brand"/>
-            <Label fx:id="previewNotice" text="BẢN XEM THỬ · DỮ LIỆU CỤC BỘ" styleClass="preview-notice" visible="false" managed="false"/>
+            <Label fx:id="previewNotice" I18n.caption="preview.notice" styleClass="preview-notice" visible="false" managed="false"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="manageButton" text="Bán sản phẩm" onAction="#handleManageItems" styleClass="nav-sell" visible="false" managed="false"/>
-            <Button fx:id="themeButton" onAction="#toggleTheme" styleClass="theme-switch"/>
+            <Button fx:id="manageButton" I18n.caption="seller.open" onAction="#handleManageItems" styleClass="nav-sell" visible="false" managed="false"><graphic><UiIcon kind="SELL"/></graphic></Button>
+            <AppearanceControls/>
             <HBox fx:id="userArea" spacing="9" alignment="CENTER_RIGHT"/>
         </HBox>
     </top>
@@ -18,8 +21,8 @@
                 <fx:include fx:id="featured" source="featured-view.fxml"/>
                 <TabPane fx:id="browseTabs" styleClass="market-tabs" tabClosingPolicy="UNAVAILABLE">
                     <tabs>
-                        <Tab text="Phiên đấu giá"><content><fx:include fx:id="auctionList" source="auction-list-view.fxml"/></content></Tab>
-                        <Tab text="Sản phẩm"><content><fx:include source="item-list-view.fxml"/></content></Tab>
+                        <Tab I18n.caption="browse.auctions"><graphic><UiIcon kind="AUCTION"/></graphic><content><fx:include fx:id="auctionList" source="auction-list-view.fxml"/></content></Tab>
+                        <Tab I18n.caption="browse.items"><graphic><UiIcon kind="PRODUCT"/></graphic><content><fx:include source="item-list-view.fxml"/></content></Tab>
                     </tabs>
                 </TabPane>
             </VBox>

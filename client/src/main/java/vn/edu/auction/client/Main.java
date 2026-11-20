@@ -15,19 +15,25 @@ public class Main extends Application {
             int port = PreviewServer.start();
             System.setProperty("auction.server.url", "http://127.0.0.1:" + port);
             SessionData.getInstance().enablePreview();
-            System.out.println("Bidora. xem thử cục bộ tại 127.0.0.1:" + port);
+            System.out.println("Bidora. xem thu cuc bo tai 127.0.0.1:" + port);
         }
         FXMLLoader loader = new FXMLLoader(Main.class.getResource("/vn/edu/auction/client/fxml/browse/browse-view.fxml"), I18n.getBundle());
         Scene scene = new Scene(loader.load(), 1120, 720);
-        scene.getStylesheets().add(Main.class.getResource("/vn/edu/auction/client/css/browse.css").toExternalForm());
         vn.edu.auction.client.ui.UiTheme.apply(scene);
         Navigator.setStage(stage);
         NavigationController.setPrimaryStage(stage);
-        stage.setTitle("Bidora. | Khám phá");
+        I18n.localize(stage.titleProperty(), "title.explore");
         stage.setMinWidth(880);
         stage.setMinHeight(620);
         stage.setScene(scene);
+        stage.setOnHidden(event -> javafx.application.Platform.exit());
         stage.show();
+    }
+
+    @Override public void stop() {
+        vn.edu.auction.client.api.UserSocketClient.getInstance().stop();
+        vn.edu.auction.client.api.AuctionRealtimeClient.getInstance().stop();
+        PreviewServer.stop();
     }
     public static void main(String[] args) { launch(args); }
 }

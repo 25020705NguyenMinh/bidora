@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import vn.edu.auction.client.I18n?>
+<?import vn.edu.auction.client.ui.AppearanceControls?>
+<?import vn.edu.auction.client.ui.UiIcon?>
 <?import javafx.scene.control.*?><?import javafx.scene.layout.*?>
 <BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="vn.edu.auction.client.controller.ItemManagementController" styleClass="market-shell">
  <top>
   <HBox spacing="16" alignment="CENTER_LEFT" styleClass="market-nav">
    <Label text="Bidora." styleClass="market-brand"/>
    <Region HBox.hgrow="ALWAYS"/>
-   <Button text="← Trở về khám phá" onAction="#handleBackToHome" styleClass="quiet-button"/>
+   <AppearanceControls/>
+   <Button I18n.caption="common.backExplore" onAction="#handleBackToHome" styleClass="quiet-button"><graphic><UiIcon kind="BACK"/></graphic></Button>
   </HBox>
  </top>
  <center>
@@ -13,66 +17,70 @@
    <content>
     <VBox spacing="18" styleClass="management-page">
      <VBox spacing="5">
-      <Label fx:id="kickerLabel" text="KHÔNG GIAN BÁN HÀNG" styleClass="section-kicker"/>
-      <Label fx:id="titleLabel" text="Bán sản phẩm" styleClass="section-title"/>
-      <Label fx:id="subtitleLabel" text="Thêm sản phẩm, theo dõi phê duyệt và tạo phiên đấu giá." styleClass="section-subtitle"/>
+      <Label fx:id="titleLabel" I18n.caption="seller.open" styleClass="section-title"/>
+      <Label fx:id="subtitleLabel" I18n.caption="manage.intro" styleClass="section-subtitle"/>
      </VBox>
      <HBox spacing="18" VBox.vgrow="ALWAYS">
       <VBox spacing="14" styleClass="management-panel" HBox.hgrow="ALWAYS">
        <HBox alignment="CENTER_LEFT">
         <VBox spacing="4" HBox.hgrow="ALWAYS">
-         <Label fx:id="tableTitleLabel" text="Danh sách sản phẩm" styleClass="management-title"/>
-         <Label fx:id="tableSubtitleLabel" text="Chọn một sản phẩm để chỉnh sửa hoặc tạo phiên." styleClass="section-subtitle"/>
+         <Label fx:id="tableTitleLabel" I18n.caption="manage.list" styleClass="management-title"/>
+         <Label fx:id="tableSubtitleLabel" I18n.caption="manage.selectItem" styleClass="section-subtitle"/>
         </VBox>
-        <Button fx:id="createAuctionButton" text="Tạo phiên đấu giá" onAction="#handleCreateAuction" styleClass="primary-button"/>
+        <Button fx:id="createAuctionButton" I18n.caption="manage.createAuction" onAction="#handleCreateAuction" styleClass="primary-button"><graphic><UiIcon kind="AUCTION"/></graphic></Button>
        </HBox>
        <HBox fx:id="filterBox" spacing="8" alignment="CENTER_LEFT" visible="false" managed="false">
-        <Button fx:id="filterPendingBtn" text="Cần phê duyệt" onAction="#handleFilterPending" styleClass="primary-button"/>
-        <Button fx:id="filterUpcomingBtn" text="Sắp bán" onAction="#handleFilterUpcoming" styleClass="outline-button"/>
-        <Button fx:id="filterActiveBtn" text="Đang bán" onAction="#handleFilterActive" styleClass="outline-button"/>
-        <Button fx:id="filterAllBtn" text="Tất cả" onAction="#handleFilterAll" styleClass="outline-button"/>
+        <Button fx:id="filterPendingBtn" I18n.caption="manage.pending" onAction="#handleFilterPending" styleClass="primary-button"/>
+        <Button fx:id="filterUpcomingBtn" I18n.caption="manage.upcoming" onAction="#handleFilterUpcoming" styleClass="outline-button"/>
+        <Button fx:id="filterActiveBtn" I18n.caption="manage.active" onAction="#handleFilterActive" styleClass="outline-button"/>
+        <Button fx:id="filterAllBtn" I18n.caption="common.all" onAction="#handleFilterAll" styleClass="outline-button"/>
        </HBox>
        <TableView fx:id="itemTable" VBox.vgrow="ALWAYS">
         <columns>
-         <TableColumn fx:id="idColumn" prefWidth="55" text="MÃ"/>
-         <TableColumn fx:id="sellerColumn" prefWidth="95" text="NGƯỜI BÁN"/>
-         <TableColumn fx:id="nameColumn" prefWidth="160" text="SẢN PHẨM"/>
-         <TableColumn fx:id="descriptionColumn" prefWidth="180" text="MÔ TẢ"/>
-         <TableColumn fx:id="priceColumn" prefWidth="130" text="GIÁ KHỞI ĐIỂM"/>
-         <TableColumn fx:id="statusColumn" prefWidth="135" text="TRẠNG THÁI"/>
+         <TableColumn fx:id="idColumn" prefWidth="55" I18n.caption="table.id"/>
+         <TableColumn fx:id="sellerColumn" prefWidth="95" I18n.caption="table.seller"/>
+         <TableColumn fx:id="nameColumn" prefWidth="160" I18n.caption="table.item"/>
+         <TableColumn fx:id="descriptionColumn" prefWidth="180" I18n.caption="table.description"/>
+         <TableColumn fx:id="priceColumn" prefWidth="130" I18n.caption="table.startingPrice"/>
+         <TableColumn fx:id="statusColumn" prefWidth="135" I18n.caption="table.status"/>
         </columns>
        </TableView>
-       <Label fx:id="messageLabel" text="Sẵn sàng." wrapText="true" styleClass="message-label"/>
+       <Label fx:id="messageLabel" I18n.caption="common.ready" wrapText="true" styleClass="message-label"/>
       </VBox>
       <VBox spacing="14" prefWidth="340" minWidth="300" styleClass="management-panel">
        <VBox spacing="4">
-        <Label fx:id="formTitleLabel" text="Thông tin sản phẩm" styleClass="management-title"/>
-        <Label fx:id="formSubtitleLabel" text="Sản phẩm mới cần được phê duyệt." wrapText="true" styleClass="section-subtitle"/>
+        <Label fx:id="formTitleLabel" I18n.caption="manage.itemDetails" styleClass="management-title"/>
+        <Label fx:id="formSubtitleLabel" I18n.caption="manage.newReview" wrapText="true" styleClass="section-subtitle"/>
+       </VBox>
+       <StackPane fx:id="productPhoto" minHeight="140" prefHeight="140"/>
+       <HBox spacing="8">
+        <Button fx:id="chooseImageButton" I18n.caption="product.chooseImage" onAction="#chooseImage"><graphic><UiIcon kind="UPLOAD"/></graphic></Button>
+        <Button fx:id="removeImageButton" I18n.caption="product.removeImage" onAction="#removeImage"><graphic><UiIcon kind="DELETE"/></graphic></Button>
+       </HBox>
+       <VBox spacing="6">
+        <Label I18n.caption="manage.name" styleClass="field-label"/>
+        <TextField fx:id="nameField" I18n.prompt="manage.nameExample"/>
        </VBox>
        <VBox spacing="6">
-        <Label text="Tên sản phẩm" styleClass="field-label"/>
-        <TextField fx:id="nameField" promptText="Ví dụ: Máy ảnh Fujifilm"/>
+        <Label I18n.caption="manage.description" styleClass="field-label"/>
+        <TextArea fx:id="descriptionArea" prefHeight="95" I18n.prompt="manage.descPrompt" wrapText="true"/>
        </VBox>
        <VBox spacing="6">
-        <Label text="Mô tả" styleClass="field-label"/>
-        <TextArea fx:id="descriptionArea" prefHeight="95" promptText="Tình trạng, thông số, phụ kiện đi kèm..." wrapText="true"/>
-       </VBox>
-       <VBox spacing="6">
-        <Label text="Giá khởi điểm (đ)" styleClass="field-label"/>
-        <TextField fx:id="startingPriceField" promptText="Nhập số tiền"/>
+        <Label I18n.caption="manage.price" styleClass="field-label"/>
+        <TextField fx:id="startingPriceField" I18n.prompt="manage.pricePrompt"/>
        </VBox>
        <VBox fx:id="feedbackBox" spacing="6" visible="false" managed="false">
-        <Label text="Feedback gửi người bán" styleClass="field-label"/>
-        <TextArea fx:id="feedbackArea" prefHeight="80" promptText="Nội dung này hiện trong thông báo của người bán khi bạn phê duyệt hoặc từ chối..." wrapText="true"/>
+        <Label I18n.caption="manage.feedback" styleClass="field-label"/>
+        <TextArea fx:id="feedbackArea" prefHeight="80" I18n.prompt="manage.feedbackPrompt" wrapText="true"/>
        </VBox>
-       <Button fx:id="createItemButton" text="Thêm sản phẩm" onAction="#handleCreateItem" maxWidth="Infinity" styleClass="primary-button"/>
-       <Button fx:id="approveButton" text="Phê duyệt sản phẩm" onAction="#handleApproveItem" maxWidth="Infinity" styleClass="primary-button" visible="false" managed="false"/>
-       <Button fx:id="rejectButton" text="Từ chối sản phẩm" onAction="#handleRejectItem" maxWidth="Infinity" styleClass="outline-button" visible="false" managed="false"/>
-       <HBox fx:id="bottomActionRow" spacing="8">
-        <Button fx:id="updateButton" text="Cập nhật" onAction="#handleUpdateItem" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-        <Button fx:id="deleteButton" text="Xóa" onAction="#handleDeleteItem" styleClass="danger-button"/>
-        <Button fx:id="clearButton" text="Làm mới" onAction="#clearForm"/>
-       </HBox>
+       <Button fx:id="createItemButton" I18n.caption="manage.add" onAction="#handleCreateItem" maxWidth="Infinity" styleClass="primary-button"><graphic><UiIcon kind="PLUS"/></graphic></Button>
+       <Button fx:id="approveButton" I18n.caption="manage.approve" onAction="#handleApproveItem" maxWidth="Infinity" styleClass="primary-button" visible="false" managed="false"><graphic><UiIcon kind="CHECK"/></graphic></Button>
+       <Button fx:id="rejectButton" I18n.caption="manage.reject" onAction="#handleRejectItem" maxWidth="Infinity" styleClass="outline-button" visible="false" managed="false"><graphic><UiIcon kind="CLOSE"/></graphic></Button>
+       <FlowPane fx:id="bottomActionRow" hgap="8" vgap="8">
+        <Button fx:id="updateButton" I18n.caption="common.update" onAction="#handleUpdateItem" HBox.hgrow="ALWAYS" maxWidth="Infinity"><graphic><UiIcon kind="SAVE"/></graphic></Button>
+        <Button fx:id="deleteButton" I18n.caption="common.delete" onAction="#handleDeleteItem" styleClass="danger-button"><graphic><UiIcon kind="DELETE"/></graphic></Button>
+        <Button fx:id="clearButton" I18n.caption="common.refresh" onAction="#clearForm"><graphic><UiIcon kind="HISTORY"/></graphic></Button>
+       </FlowPane>
       </VBox>
      </HBox>
     </VBox>

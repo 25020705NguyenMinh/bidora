@@ -1,5 +1,7 @@
 package vn.edu.auction.client.ui;
 
+import vn.edu.auction.client.I18n;
+
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -31,11 +33,11 @@ public final class BidHistoryChart extends VBox {
                 .sorted(Comparator.comparing(BidResponse::getBidTime)
                         .thenComparing(BidResponse::getBidId, Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
-        Label title = new Label(demo ? "Lịch sử đặt giá minh họa" : "Lịch sử đặt giá");
+        Label title = new Label(demo ? I18n.get("chart.sample") : I18n.get("chart.title"));
         title.getStyleClass().add("history-title");
         getChildren().add(title);
         if (accepted.isEmpty()) {
-            Label empty = new Label("Chưa có lượt đặt giá nào.");
+            Label empty = I18n.caption(new Label(), "chart.empty");
             empty.getStyleClass().add("history-empty");
             getChildren().add(empty);
             return;
@@ -55,7 +57,7 @@ public final class BidHistoryChart extends VBox {
         NumberAxis priceAxis = new NumberAxis();
         priceAxis.setForceZeroInRange(false);
         priceAxis.setMinorTickVisible(false);
-        priceAxis.setLabel(unit.intValue() == 1000000 ? "Giá (triệu đ)" : "Giá (nghìn đ)");
+        priceAxis.setLabel(unit.intValue() == 1000000 ? I18n.get("chart.millions") : I18n.get("chart.thousands"));
         LineChart<Number, Number> chart = new LineChart<>(timeAxis, priceAxis);
         chart.setAnimated(false);
         chart.setLegendVisible(false);
@@ -66,27 +68,39 @@ public final class BidHistoryChart extends VBox {
         chart.getStyleClass().add("bid-history-chart");
         XYChart.Series<Number, Number> series = new XYChart.Series<>();
         if (startingPrice != null && startTime != null) {
-            addPoint(series, origin, startTime, startingPrice, unit, "Giá khởi điểm");
+            addPoint(series, origin, startTime, startingPrice, unit, I18n.get("item.startingPrice"), null);
         }
         for (BidResponse bid : accepted) {
             addPoint(series, origin, bid.getBidTime(), bid.getAmount(), unit,
-                    "Người đặt #" + bid.getBidderId());
+                    I18n.get("chart.bidder") + bid.getBidderId(), demo ? null : bid.getBidderId());
         }
         chart.getData().add(series);
         getChildren().add(chart);
-        Label hint = new Label(accepted.size() + " lượt đặt giá • Rê chuột vào điểm để xem giá và thời gian");
+        Label hint = new Label(I18n.get("chart.hint", accepted.size())
+                + (demo ? "" : I18n.get("chart.profileHint")));
         hint.getStyleClass().add("detail-note");
         hint.setWrapText(true);
         getChildren().add(hint);
     }
 
     private void addPoint(XYChart.Series<Number, Number> series, LocalDateTime start,
-                          LocalDateTime time, BigDecimal amount, BigDecimal unit, String title) {
+                          LocalDateTime time, BigDecimal amount, BigDecimal unit, String title, Long bidderId) {
         XYChart.Data<Number, Number> point = new XYChart.Data<>(
                 Duration.between(start, time).toMillis() / 1000.0,
                 amount.divide(unit).doubleValue());
         String text = title + "\n" + UiKit.money(amount) + "\n" + FULL_TIME.format(UiKit.toLocal(time));
-        point.nodeProperty().addListener((observable, oldNode, node) -> installTooltip(node, text));
+        point.nodeProperty().addListener((observable, oldNode, node) -> {
+            installTooltip(node, text);
+            if (node != null && bidderId != null) {
+                node.setCursor(javafx.scene.Cursor.HAND);
+                node.setFocusTraversable(true);
+                Runnable open = () -> TradingProfileDialog.show(node.getScene().getWindow(), bidderId, false);
+                node.setOnMouseClicked(e -> open.run());
+                node.setOnKeyPressed(e -> {
+                    if (e.getCode() == javafx.scene.input.KeyCode.ENTER) { e.consume(); open.run(); }
+                });
+            }
+        });
         series.getData().add(point);
     }
 

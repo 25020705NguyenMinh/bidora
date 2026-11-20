@@ -10,8 +10,11 @@ public class Admin extends User {
     }
 
     public Admin() {
-        super();
-        setRole(UserRole.ADMIN);
+        super(null, null, null, UserRole.ADMIN, null);
+    }
+
+    @Override public java.util.Set<UserRole> permissions() {
+        return java.util.Set.of(UserRole.ADMIN, UserRole.SELLER, UserRole.BIDDER);
     }
     
 }

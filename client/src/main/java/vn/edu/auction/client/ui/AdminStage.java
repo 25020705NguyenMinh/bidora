@@ -33,7 +33,7 @@ import vn.edu.auction.shared.enums.UserRole;
 import vn.edu.auction.shared.enums.UserStatus;
 
 /**
- * Trang quản trị riêng cho ADMIN, cùng phong cách với trang "Bán sản phẩm":
+ * Trang quản trị riêng cho ADMIN, cùng phong cách với trang bán sản phẩm:
  * (1) Quản lý sản phẩm (duyệt / từ chối kèm feedback gửi vào thông báo của người bán),
  * (2) Tài khoản, (3) Phiên đấu giá.
  */
@@ -48,94 +48,106 @@ public final class AdminStage {
 
         // ---------- Tab 1: Quản lý sản phẩm (dùng chung màn hình với trang bán sản phẩm) ----------
         ItemManagementController[] items = new ItemManagementController[1];
-        Tab productsTab = new Tab("Quản lý sản phẩm", loadProductsView(items));
+        Tab productsTab = new Tab(I18n.get("manage.title"), loadProductsView(items));
+        productsTab.setGraphic(new UiIcon(UiIcon.Kind.PRODUCT));
 
         // ---------- Tab 2: tài khoản ----------
         Label usersMsg = messageLabel();
-        TableView<AdminUserResponse> users = table("Chưa có tài khoản nào.");
-        UiKit.col(users, "MÃ", AdminUserResponse::id);
-        UiKit.col(users, "HỌ TÊN", AdminUserResponse::fullName);
-        UiKit.col(users, "EMAIL", AdminUserResponse::email);
-        UiKit.col(users, "VAI TRÒ", u -> roleText(u.role()));
-        UiKit.col(users, "TRẠNG THÁI", u -> userStatusText(u.status()));
+        TableView<AdminUserResponse> users = table("admin.noAccounts");
+        UiKit.col(users, "table.id", AdminUserResponse::id);
+        UiKit.col(users, "table.name", AdminUserResponse::fullName);
+        UiKit.col(users, "email.label", AdminUserResponse::email);
+        UiKit.col(users, "table.role", u -> roleText(u.role()));
+        UiKit.col(users, "table.status", u -> userStatusText(u.status()));
         Runnable loadUsers = () -> FxAsync.run(api::users, l -> users.getItems().setAll(l),
-                e -> usersMsg.setText(BaseApiClient.describe(e)));
+                e -> I18n.track(usersMsg.textProperty(), () -> BaseApiClient.describe(e)));
 
-        Button toggle = new Button("Vô hiệu hóa / Kích hoạt");
+        Button toggle = I18n.caption(new Button(), "admin.toggleActive");
+        toggle.setGraphic(new UiIcon(UiIcon.Kind.SWITCH));
         toggle.getStyleClass().add("outline-button");
         toggle.setOnAction(e -> {
             AdminUserResponse u = users.getSelectionModel().getSelectedItem();
-            if (u == null) { usersMsg.setText("Hãy chọn một tài khoản."); return; }
+            if (u == null) { I18n.localize(usersMsg.textProperty(), "admin.pickAccount"); return; }
             UserStatus next = u.status() == UserStatus.ACTIVE ? UserStatus.INACTIVE : UserStatus.ACTIVE;
             UiKit.act(usersMsg, () -> { api.setUserStatus(u.id(), next); return Boolean.TRUE; }, loadUsers);
         });
 
-        Button promote = new Button("Nâng lên Admin");
+        Button promote = I18n.caption(new Button(), "admin.grant");
+        promote.setGraphic(new UiIcon(UiIcon.Kind.SHIELD));
         promote.getStyleClass().add("primary-button");
         promote.setOnAction(e -> {
             AdminUserResponse u = users.getSelectionModel().getSelectedItem();
-            if (u == null) { usersMsg.setText("Hãy chọn một tài khoản."); return; }
+            if (u == null) { I18n.localize(usersMsg.textProperty(), "admin.pickAccount"); return; }
             // Chặn sớm ở client cho đỡ tốn một request; server vẫn kiểm tra lại (nguồn sự thật)
-            if (u.role() == UserRole.ADMIN) { usersMsg.setText("Tài khoản này đã là quản trị viên."); return; }
-            if (confirm("Nâng " + u.email() + " lên ADMIN? Tài khoản này sẽ không còn đặt giá/bán hàng được.")) {
+            if (u.role() == UserRole.ADMIN) { I18n.localize(usersMsg.textProperty(), "admin.alreadyAdmin"); return; }
+            if (confirm(I18n.get("admin.grantConfirm", u.email()))) {
                 UiKit.act(usersMsg, () -> { api.promoteToAdmin(u.id()); return Boolean.TRUE; }, loadUsers);
             }
         });
 
-        Button delete = new Button("Xóa tài khoản");
+        Button delete = I18n.caption(new Button(), "admin.deleteAccount");
+        delete.setGraphic(new UiIcon(UiIcon.Kind.DELETE));
         delete.getStyleClass().add("danger-button");
         delete.setOnAction(e -> {
             AdminUserResponse u = users.getSelectionModel().getSelectedItem();
-            if (u == null) { usersMsg.setText("Hãy chọn một tài khoản."); return; }
-            if (confirm("Xóa tài khoản " + u.email() + "?")) {
+            if (u == null) { I18n.localize(usersMsg.textProperty(), "admin.pickAccount"); return; }
+            if (confirm(I18n.get("admin.deleteConfirm", u.email()))) {
                 UiKit.act(usersMsg, () -> { api.deleteUser(u.id()); return Boolean.TRUE; }, loadUsers);
             }
         });
 
-        Tab usersTab = new Tab("Tài khoản", page(
-                "QUẢN LÝ NGƯỜI DÙNG", "Tài khoản",
-                "Kích hoạt, vô hiệu hóa, xóa hoặc nâng quyền quản trị cho tài khoản.",
-                "Danh sách tài khoản", "Chọn một tài khoản để thao tác.",
+        Tab usersTab = new Tab(I18n.get("admin.accounts"), page(
+                "admin.accounts",
+                "admin.usersIntro",
+                "admin.userList", "admin.selectUser",
                 users, usersMsg, loadUsers, toggle, promote, delete));
 
         // ---------- Tab 3: phiên đấu giá ----------
         Label auctionsMsg = messageLabel();
-        TableView<AdminAuctionResponse> auctions = table("Chưa có phiên đấu giá nào.");
-        UiKit.col(auctions, "MÃ", AdminAuctionResponse::id);
-        UiKit.col(auctions, "SẢN PHẨM", AdminAuctionResponse::itemName);
-        UiKit.col(auctions, "GIÁ HIỆN TẠI", a -> UiKit.money(a.currentPrice()));
-        UiKit.col(auctions, "NGƯỜI DẪN ĐẦU", a -> a.highestBidderId() == null ? "—" : "#" + a.highestBidderId());
-        UiKit.col(auctions, "LƯỢT BID", AdminAuctionResponse::bidCount);
-        UiKit.col(auctions, "KẾT THÚC", a -> UiKit.dt(a.endTime()));
-        UiKit.col(auctions, "TRẠNG THÁI", a -> auctionStatusText(a.status()));
-        UiKit.col(auctions, "HIỂN THỊ", a -> a.hidden() ? "Đang ẩn" : "Hiển thị");
+        TableView<AdminAuctionResponse> auctions = table("admin.noAuctions");
+        UiKit.col(auctions, "table.id", AdminAuctionResponse::id);
+        UiKit.col(auctions, "table.item", AdminAuctionResponse::itemName);
+        UiKit.col(auctions, "table.price", a -> UiKit.money(a.currentPrice()));
+        UiKit.col(auctions, "table.leading", a -> a.highestBidderId() == null ? "—" : "#" + a.highestBidderId());
+        UiKit.col(auctions, "table.bids", AdminAuctionResponse::bidCount);
+        UiKit.col(auctions, "table.ends", a -> UiKit.dt(a.endTime()));
+        UiKit.col(auctions, "table.status", a -> auctionStatusText(a.status()));
+        UiKit.col(auctions, "table.visibility", a -> a.hidden() ? I18n.get("status.hidden") : I18n.get("status.visible"));
         Runnable loadAuctions = () -> FxAsync.run(api::auctions, l -> auctions.getItems().setAll(l),
-                e -> auctionsMsg.setText(BaseApiClient.describe(e)));
+                e -> I18n.track(auctionsMsg.textProperty(), () -> BaseApiClient.describe(e)));
 
-        Button stop = new Button("Dừng đấu giá");
+        Button stop = I18n.caption(new Button(), "admin.stopAuction");
+        stop.setGraphic(new UiIcon(UiIcon.Kind.CLOSE));
         stop.getStyleClass().add("danger-button");
         stop.setOnAction(e -> {
             AdminAuctionResponse a = auctions.getSelectionModel().getSelectedItem();
-            if (a == null) { auctionsMsg.setText("Hãy chọn một phiên."); return; }
-            if (confirm("Dừng phiên đấu giá \"" + a.itemName() + "\"?")) {
+            if (a == null) { I18n.localize(auctionsMsg.textProperty(), "admin.pickAuction"); return; }
+            if (confirm(I18n.get("admin.stopConfirm", a.itemName()))) {
                 UiKit.act(auctionsMsg, () -> { api.stopAuction(a.id()); return Boolean.TRUE; }, loadAuctions);
             }
         });
-        Button hide = new Button("Ẩn / Hiện phiên");
+        Button hide = I18n.caption(new Button(), "admin.visibility");
+        hide.setGraphic(new UiIcon(UiIcon.Kind.VISIBILITY));
         hide.getStyleClass().add("outline-button");
         hide.setOnAction(e -> {
             AdminAuctionResponse a = auctions.getSelectionModel().getSelectedItem();
-            if (a == null) { auctionsMsg.setText("Hãy chọn một phiên."); return; }
+            if (a == null) { I18n.localize(auctionsMsg.textProperty(), "admin.pickAuction"); return; }
             UiKit.act(auctionsMsg, () -> { api.setHidden(a.id(), !a.hidden()); return Boolean.TRUE; }, loadAuctions);
         });
 
-        Tab auctionsTab = new Tab("Phiên đấu giá", page(
-                "GIÁM SÁT ĐẤU GIÁ", "Phiên đấu giá",
-                "Theo dõi giá, lượt bid và dừng hoặc ẩn các phiên cần xử lý.",
-                "Danh sách phiên đấu giá", "Danh sách tự làm mới khi có bid mới hoặc phiên kết thúc.",
+        Tab auctionsTab = new Tab(I18n.get("browse.auctions"), page(
+                "browse.auctions",
+                "admin.auctionsIntro",
+                "admin.auctionList", "admin.auctionUpdates",
                 auctions, auctionsMsg, loadAuctions, stop, hide));
 
         TabPane tabs = new TabPane(productsTab, usersTab, auctionsTab);
+        I18n.localize(productsTab.textProperty(), "manage.title");
+        usersTab.setGraphic(new UiIcon(UiIcon.Kind.USER));
+        I18n.localize(usersTab.textProperty(), "admin.accounts");
+        auctionsTab.setGraphic(new UiIcon(UiIcon.Kind.AUCTION));
+        I18n.localize(auctionsTab.textProperty(), "browse.auctions");
+        I18n.onChange(tabs, () -> { users.refresh(); auctions.refresh(); });
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         tabs.getStyleClass().addAll("market-tabs", "admin-tabs");
         tabs.getSelectionModel().selectedItemProperty().addListener((o, old, now) -> {
@@ -147,14 +159,12 @@ public final class AdminStage {
         // ---------- Khung cửa sổ ----------
         Label brand = new Label("Bidora.");
         brand.getStyleClass().add("market-brand");
-        Label badge = new Label("QUẢN TRỊ");
-        badge.getStyleClass().add("section-kicker");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        Button close = new Button("Đóng");
+        Button close = I18n.caption(new Button(), "common.close");
         close.getStyleClass().add("quiet-button");
         close.setOnAction(e -> stage.close());
-        HBox nav = new HBox(12, brand, badge, spacer, close);
+        HBox nav = new HBox(12, brand, spacer, new AppearanceControls(), close);
         nav.setAlignment(Pos.CENTER_LEFT);
         nav.getStyleClass().add("market-nav");
 
@@ -165,7 +175,7 @@ public final class AdminStage {
 
         stage = new Stage();
         stage.initOwner(owner);
-        stage.setTitle("Trang quản trị");
+        I18n.localize(stage.titleProperty(), "admin.title");
         Scene scene = new Scene(root, 1280, 820);
         UiTheme.apply(scene);
         stage.setScene(scene);
@@ -185,6 +195,7 @@ public final class AdminStage {
         try {
             FXMLLoader loader = new FXMLLoader(AdminStage.class.getResource(
                     "/vn/edu/auction/client/fxml/item-management-view.fxml"), I18n.getBundle());
+            loader.setControllerFactory(type -> new ItemManagementController(true));
             Parent view = loader.load();
             holder[0] = loader.getController();
             // Đã nằm trong cửa sổ quản trị nên bỏ thanh "Trở về khám phá"
@@ -192,20 +203,20 @@ public final class AdminStage {
             return view;
         } catch (Exception ex) {
             Label err = messageLabel();
-            err.setText("Không mở được màn hình quản lý sản phẩm: " + ex.getMessage());
+            err.setText(I18n.get("admin.openFailed", ex.getMessage()));
             return err;
         }
     }
 
     /** Một trang tab: tiêu đề + thẻ trắng chứa thanh nút, bảng và dòng thông báo. */
-    private static Node page(String kicker, String title, String subtitle, String panelTitle, String panelSubtitle,
+    private static Node page(String title, String subtitle, String panelTitle, String panelSubtitle,
                              TableView<?> table, Label msg, Runnable reload, Button... actions) {
-        Label sub = styled(new Label(subtitle), "section-subtitle");
+        Label sub = styled(I18n.caption(new Label(), subtitle), "section-subtitle");
         sub.setWrapText(true);
-        VBox head = new VBox(5, styled(new Label(kicker), "section-kicker"),
-                styled(new Label(title), "section-title"), sub);
+        VBox head = new VBox(5, styled(I18n.caption(new Label(), title), "section-title"), sub);
 
-        Button refresh = new Button("Làm mới");
+        Button refresh = I18n.caption(new Button(), "common.refresh");
+        refresh.setGraphic(new UiIcon(UiIcon.Kind.HISTORY));
         refresh.getStyleClass().add("outline-button");
         refresh.setOnAction(e -> reload.run());
         Region spacer = new Region();
@@ -215,10 +226,10 @@ public final class AdminStage {
         bar.getChildren().addAll(actions);
         bar.getChildren().addAll(spacer, refresh);
 
-        Label panelSub = styled(new Label(panelSubtitle), "section-subtitle");
+        Label panelSub = styled(I18n.caption(new Label(), panelSubtitle), "section-subtitle");
         panelSub.setWrapText(true);
         VBox panel = new VBox(14,
-                new VBox(4, styled(new Label(panelTitle), "management-title"), panelSub),
+                new VBox(4, styled(I18n.caption(new Label(), panelTitle), "management-title"), panelSub),
                 bar, table, msg);
         panel.getStyleClass().add("management-panel");
         table.setMinHeight(280);
@@ -250,8 +261,8 @@ public final class AdminStage {
 
     private static <T> TableView<T> table(String placeholder) {
         TableView<T> t = new TableView<>();
-        t.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        t.setPlaceholder(new Label(placeholder));
+        t.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        t.setPlaceholder(I18n.caption(new Label(), placeholder));
         return t;
     }
 
@@ -260,15 +271,16 @@ public final class AdminStage {
         a.setHeaderText(null);
         if (stage != null) a.initOwner(stage);
         UiTheme.apply(a.getDialogPane());
+        vn.edu.auction.client.ui.UiMotion.install(a);
         return a.showAndWait().filter(b -> b == ButtonType.YES).isPresent();
     }
 
     private static String roleText(UserRole r) {
         if (r == null) return "—";
         return switch (r) {
-            case ADMIN -> "Quản trị viên";
-            case SELLER -> "Người bán";
-            case BIDDER -> "Người mua";
+            case ADMIN -> I18n.get("role.admin");
+            case SELLER -> I18n.get("role.seller");
+            case BIDDER -> I18n.get("role.buyer");
             default -> r.name();
         };
     }
@@ -276,8 +288,8 @@ public final class AdminStage {
     private static String userStatusText(UserStatus s) {
         if (s == null) return "—";
         return switch (s) {
-            case ACTIVE -> "Hoạt động";
-            case INACTIVE -> "Không hoạt động";
+            case ACTIVE -> I18n.get("account.active");
+            case INACTIVE -> I18n.get("account.inactive");
             default -> s.name();
         };
     }
@@ -285,11 +297,11 @@ public final class AdminStage {
     private static String auctionStatusText(AuctionStatus s) {
         if (s == null) return "—";
         return switch (s) {
-            case OPEN -> "Sắp diễn ra";
-            case RUNNING -> "Đang diễn ra";
-            case FINISHED -> "Đã kết thúc";
-            case PAID -> "Đã thanh toán";
-            case CANCELED -> "Đã hủy";
+            case OPEN -> I18n.get("status.upcoming");
+            case RUNNING -> I18n.get("status.live");
+            case FINISHED -> I18n.get("status.ended");
+            case PAID -> I18n.get("status.paid");
+            case CANCELED -> I18n.get("status.cancelled");
         };
     }
 }

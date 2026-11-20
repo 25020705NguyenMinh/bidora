@@ -43,7 +43,7 @@ public final class Navigator {
 
         vn.edu.auction.client.ui.UiTheme.apply(scene);
         stage.setScene(scene);
-        stage.setTitle(I18n.get(titleKey));
+        I18n.localize(stage.titleProperty(), titleKey);
         stage.sizeToScene();
         stage.centerOnScreen();
 

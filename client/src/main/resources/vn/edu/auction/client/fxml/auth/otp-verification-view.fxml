@@ -1,4 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
+<?import vn.edu.auction.client.I18n?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import vn.edu.auction.client.auth.AuthLayout?>
@@ -12,8 +13,8 @@
                 <ComboBox fx:id="languageComboBox" styleClass="language-combo" />
             </HBox>
             <VBox spacing="6" styleClass="auth-heading">
-                <Label text="%otp.title" wrapText="true" styleClass="auth-heading-title" />
-                <Label text="%otp.sentTo" styleClass="auth-heading-copy" />
+                <Label I18n.caption="otp.title" wrapText="true" styleClass="auth-heading-title" />
+                <Label I18n.caption="otp.sentTo" styleClass="auth-heading-copy" />
                 <Label fx:id="emailLabel" styleClass="field-label" />
             </VBox>
             <HBox spacing="8" alignment="CENTER_LEFT">
@@ -25,13 +26,13 @@
                 <TextField fx:id="otp6" styleClass="otp-digit" />
             </HBox>
             <HBox alignment="CENTER_LEFT" spacing="4">
-                <Label text="%otp.noCode" styleClass="auth-heading-copy" />
-                <Hyperlink fx:id="resendLink" text="%otp.resend" onAction="#onResend" styleClass="auth-link" />
+                <Label I18n.caption="otp.noCode" styleClass="auth-heading-copy" />
+                <Hyperlink fx:id="resendLink" I18n.caption="otp.resend" onAction="#onResend" styleClass="auth-link" />
                 <Label fx:id="countdownLabel" styleClass="auth-heading-copy" />
             </HBox>
             <Label fx:id="messageLabel" wrapText="true" styleClass="message-label" />
-            <Button fx:id="continueButton" defaultButton="true" maxWidth="Infinity" text="%common.continue" onAction="#onContinue" styleClass="primary-button" />
-            <Hyperlink text="%common.back" onAction="#openLoginView" styleClass="auth-link" />
+            <Button fx:id="continueButton" defaultButton="true" maxWidth="Infinity" I18n.caption="common.continue" onAction="#onContinue" styleClass="primary-button" />
+            <Hyperlink I18n.caption="common.back" onAction="#openLoginView" styleClass="auth-link" />
         </VBox>
     </form>
 </AuthLayout>

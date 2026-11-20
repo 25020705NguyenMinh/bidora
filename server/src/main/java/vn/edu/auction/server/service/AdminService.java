@@ -97,7 +97,7 @@ public class AdminService {
         target.setRole(UserRole.ADMIN); // JPA tự lưu khi commit (class đang @Transactional)
 
         // Nâng quyền là thao tác nhạy cảm: ghi lại ai nâng ai để truy vết
-        log.warn("ADMIN #{} đã nâng tài khoản #{} ({}) lên ADMIN", adminId, targetId, target.getEmail());
+        log.warn("ADMIN #{} da nang tai khoan #{} ({}) len ADMIN", adminId, targetId, target.getEmail());
 
         social.notify(targetId, "ROLE_CHANGED",
                 "Bạn đã được nâng lên quản trị viên. Hãy đăng nhập lại để dùng trang quản trị.", targetId);
@@ -109,7 +109,7 @@ public class AdminService {
         var all = items.findAll();
         log.info("AdminService.allItems - total items in DB: {}", all.size());
         for (var i : all) {
-            log.info("  item id={} status={} name={} sellerId={}", i.getId(), i.getStatus(), i.getName(), i.getSellerId());
+            log.info("  item id={} status={} sellerId={}", i.getId(), i.getStatus(), i.getSellerId());
         }
         Map<Long, AuctionEntity> auctionByItem = auctions.findAll().stream()
                 .collect(Collectors.toMap(AuctionEntity::getItemId, a -> a, (a1, a2) -> a1));
@@ -117,8 +117,10 @@ public class AdminService {
                 .filter(i -> i.getStatus() == null || i.getStatus() != ItemStatus.REMOVED)
                 .map(i -> {
                     AuctionEntity a = auctionByItem.get(i.getId());
-                    return new ItemResponse(i.getId(), i.getSellerId(), i.getName(), i.getDescription(),
+                    var dto = new ItemResponse(i.getId(), i.getSellerId(), i.getName(), i.getDescription(),
                             i.getStartingPrice(), i.getStatus(), a != null ? a.getStatus() : null);
+                    dto.setImage(i.getImage());
+                    return dto;
                 }).toList();
         log.info("AdminService.allItems - after filter REMOVED: {}", result.size());
         return result;
@@ -127,8 +129,11 @@ public class AdminService {
     @Transactional(readOnly = true)
     public List<ItemResponse> pendingItems() {
         return items.findByStatus(ItemStatus.DRAFT).stream()
-                .map(i -> new ItemResponse(i.getId(), i.getSellerId(), i.getName(), i.getDescription(),
-                        i.getStartingPrice(), i.getStatus())).toList();
+                .map(i -> {
+                    var dto = new ItemResponse(i.getId(), i.getSellerId(), i.getName(), i.getDescription(), i.getStartingPrice(), i.getStatus());
+                    dto.setImage(i.getImage());
+                    return dto;
+                }).toList();
     }
 
     public void approveItem(Long id) {

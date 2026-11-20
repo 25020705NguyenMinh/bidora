@@ -4,9 +4,13 @@
 
 Ở chế độ kết nối server, khách có thể tìm phiên, xem giá và lịch sử đặt giá. Khi khách bấm **Đặt giá**, Bidora mở đăng nhập và đưa họ về phiên để kiểm tra giá rồi xác nhận.
 
-Từ thư mục gốc của repository, chạy `mvn "-Dmaven.repo.local=../.m2/repository" -pl client "-Djavafx.args=--preview" javafx:run`. Ứng dụng tự mở tài khoản **Tài khoản xem thử** với dữ liệu tạm trong bộ nhớ. Có thể xem danh sách phiên, đặt giá, ví, hồ sơ và chat. Đóng ứng dụng sẽ xóa dữ liệu xem thử. Dải chữ “BẢN XEM THỬ · DỮ LIỆU CỤC BỘ” ở thanh trên cho biết đang dùng chế độ này.
+Từ thư mục gốc của repository, chạy `mvn "-Dmaven.repo.local=../.m2/repository" -pl client "-Djavafx.args=--preview" javafx:run`. Ứng dụng tự mở tài khoản **Tài khoản xem thử** với dữ liệu tạm trong bộ nhớ. Có thể xem danh sách phiên, đặt giá, ví, hồ sơ và chat. Đóng ứng dụng sẽ xóa dữ liệu xem thử. Nhãn “Xem thử cục bộ” ở thanh trên cho biết đang dùng chế độ này.
 
 Chế độ xem thử chạy trên `127.0.0.1` và không kết nối TiDB. Để kiểm tra cập nhật giá, thông báo và chat giữa nhiều tài khoản, chạy server thật với database rồi đăng nhập bằng các tài khoản thật.
+
+Nhấn **EN** hoặc **VI** trên thanh điều hướng để đổi ngôn ngữ trong khi đang xem phiên. Nút mặt trời/mặt trăng kế bên hỗ trợ nhấn hoặc dùng phím Space khi có tiêu điểm. Bidora ghi nhớ ngôn ngữ và giao diện sáng/tối cho lần mở sau.
+
+Phần UI/UX của nhóm dùng nhánh `feature/p3.uiux.playground`. Khi thêm nội dung giao diện, khai báo cùng một khóa trong `messages_vi.properties` và `messages_en.properties`. Trong FXML dùng `I18n.caption="wallet.balance"` cho nhãn và `I18n.prompt="browse.search"` cho gợi ý nhập. Dữ liệu sản phẩm và nội dung chat giữ nguyên lời người dùng.
 
 > **Bài tập lớn môn Lập trình Nâng cao — Nhóm 10**  
 > Hệ thống đấu giá trực tuyến đa người dùng theo kiến trúc Client–Server hiện đại, tích hợp cập nhật giá thời gian thực qua WebSocket, cơ chế chống đặt giá phút chót (Anti-Sniping), ví điện tử nội bộ và quản trị tập trung.
@@ -42,16 +46,19 @@ Chế độ xem thử chạy trên `127.0.0.1` và không kết nối TiDB. Đ�
 
 | Vai trò (`UserRole`) | Mô tả quyền hạn |
 | :--- | :--- |
-| **`BIDDER`** (Người mua) | Duyệt danh sách vật phẩm/phiên đấu giá, nạp/rút ví, đặt giá trực tuyến, theo dõi phiên/người bán và nhắn tin trao đổi. |
-| **`SELLER`** (Người bán) | Bao gồm các quyền cơ bản và bổ sung quyền tạo/chỉnh sửa vật phẩm, gửi yêu cầu kiểm duyệt và mở phiên đấu giá mới (không được tự đặt giá vật phẩm của chính mình). |
-| **`ADMIN`** (Quản trị viên) | Kiểm duyệt hoặc từ chối vật phẩm mới, quản lý trạng thái/phân quyền người dùng, giám sát, ẩn hoặc dừng khẩn cấp các phiên đấu giá. |
+| **`BIDDER`**, **`SELLER`** | Cùng được đăng bán, mở phiên sau khi duyệt và đặt giá ở phiên của người khác. Tài khoản mới nhận giá trị `BIDDER`. |
+| **`ADMIN`** | Giữ quyền mua bán và có thêm trang quản trị để duyệt sản phẩm, quản lý tài khoản và điều hành phiên. |
+
+Ở **Thông tin tài khoản → Hồ sơ mua và bán**, bật **Tách hồ sơ** để đặt tên, ảnh và giới thiệu riêng. Khi tắt, cả hai hoạt động dùng hồ sơ chung. Người xem mở hồ sơ bán từ chi tiết phiên, hồ sơ mua từ người dẫn đầu hoặc điểm trên biểu đồ giá. Email, mật khẩu, ví và ID chủ sở hữu luôn thuộc cùng một tài khoản. Server so sánh ID từ JWT với ID người bán khi nhận lượt đặt giá.
+
+Nếu quên mật khẩu khi đang đăng nhập, chọn **Thông tin tài khoản → Quên mật khẩu?** để nhận OTP qua email và quay về tài khoản sau khi đặt lại.
 
 ---
 
 ## 2. Tính năng nổi bật
 
 - **Xác thực & Bảo mật đa lớp**:
-  - Đăng ký tài khoản kèm xác thực mã **OTP 6 số** (hỗ trợ gửi qua SMTP Email hoặc xuất trực tiếp ra Console để phát triển/kiểm thử), giới hạn tần suất gửi lại (cooldown) và số lần nhập sai tối đa.
+  - Đăng ký bằng email và xác minh **OTP 6 số** qua SMTP, có giới hạn tần suất gửi lại và số lần nhập sai.
   - Đăng nhập truyền thống (mã hóa mật khẩu bằng **BCrypt**) hoặc **Google OAuth2**, cấp phát **JWT (JSON Web Token)** cho mọi yêu cầu REST API và kết nối WebSocket.
   - Quy trình Quên mật khẩu & Đặt lại mật khẩu an toàn qua OTP.
 - **Đấu giá thời gian thực & Chống Sniping (Anti-Sniping)**:
@@ -111,7 +118,7 @@ flowchart LR
 ## 4. Cấu trúc thư mục dự án
 
 ```text
-BaiTapLon-Ltnc-nhom10vip-dev/
+bidora/
 ├── .gitignore
 ├── Dockerfile                                               # Đóng gói container cho module server
 ├── README.md                                                # Tài liệu giới thiệu & hướng dẫn dự án
@@ -325,13 +332,29 @@ BaiTapLon-Ltnc-nhom10vip-dev/
 
 Cần JDK 21+ và Maven.
 
-### Chạy backend bằng PowerShell
+### Dùng backend chung của nhóm
+
+Mở `AppLauncher` hoặc chạy client từ thư mục chứa `pom.xml` gốc. Mỗi máy chạy JavaFX. Client mặc định gọi backend trên Render qua REST và WebSocket. Dockerfile đóng gói backend cho Render và backend kết nối TiDB qua JDBC. Thành viên chỉ dùng client không cần file môi trường hay mật khẩu TiDB. Nếu trước đó đã thử server local, bỏ biến `AUCTION_SERVER_URL` và tham số JVM `auction.server.url` trước khi mở lại client.
+
+```powershell
+mvn "-Dmaven.repo.local=../.m2/repository" -pl shared -am install
+mvn "-Dmaven.repo.local=../.m2/repository" -pl client javafx:run
+```
+
+### Chạy backend riêng bằng PowerShell
+
+Từ thư mục chứa `start-server.ps1`, sao chép `.env.example` thành `.env` một lần rồi điền thông tin database thử nghiệm và SMTP. File này được Git bỏ qua. Ví dụ sau mở đúng file cần sửa.
+
+```powershell
+Copy-Item .env.example .env
+notepad .env
+```
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy RemoteSigned -File .\start-server.ps1
 ```
 
-Script dùng các biến đã đặt trong terminal và hỏi những biến còn thiếu. Mật khẩu và khóa được nhập ẩn. Các giá trị nhập qua script chỉ tồn tại trong phiên chạy này. Với đăng nhập Google, thêm `-Google` vào cuối lệnh.
+Script ưu tiên biến đã đặt trong terminal, đọc tiếp các giá trị còn thiếu từ `.env`, rồi hỏi nếu vẫn thiếu. Viết mỗi dòng dạng `KEY=value`. Mật khẩu và khóa nhập ở terminal được ẩn. Có thể dùng `-EnvFile <đường-dẫn>` hoặc thêm `-Google` để bật OAuth. Nếu đã dùng `config/application-local.properties`, kiểm tra các thuộc tính datasource trong đó vì Spring ưu tiên file này hơn giá trị mặc định lấy từ `DB_*`.
 
 | Biến | Giá trị cần chuẩn bị |
 | --- | --- |
@@ -339,10 +362,11 @@ Script dùng các biến đã đặt trong terminal và hỏi những biến cò
 | `DB_USERNAME`, `DB_PASSWORD` | Tài khoản có quyền dùng database của dự án. |
 | `JWT_SECRET` | Khóa ngẫu nhiên ít nhất 32 byte. Dùng cùng khóa giữa các lần chạy để giữ hiệu lực token. |
 | `MAIL_USER`, `MAIL_PASSWORD` | Địa chỉ Gmail gửi OTP và mật khẩu ứng dụng SMTP. |
+| `MAIL_HOST`, `MAIL_PORT` | Máy chủ SMTP và cổng STARTTLS. Mặc định `smtp.gmail.com` và `587`. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Thông tin OAuth khi bật profile `google`. |
 | `PORT` | Cổng backend, mặc định `8080`. |
 
-Trên Render, điền các biến này trong **Environment**. Với Google, thêm `SPRING_PROFILES_INCLUDE=google` và đăng ký redirect URI `https://<tên-service>/login/oauth2/code/google` trong Google Cloud.
+Trên Render, người vận hành điền các biến trong **Web Service → Environment**. Đặt `DB_URL` theo mục kết nối JDBC của cụm TiDB, kèm `sslMode=VERIFY_IDENTITY`. Dùng tài khoản TiDB trong `DB_USERNAME` và `DB_PASSWORD`. Với Google, thêm `SPRING_PROFILES_INCLUDE=google` và đăng ký redirect URI `https://<tên-service>/login/oauth2/code/google` trong Google Cloud.
 
 ### Mở client dùng backend trên máy
 
@@ -355,3 +379,58 @@ mvn "-Dmaven.repo.local=../.m2/repository" -pl client javafx:run
 ```
 
 Khi `AUCTION_SERVER_URL` chưa được đặt, client kết nối Render. Khi dùng `--preview`, client kết nối bản xem thử trong bộ nhớ. Khách có thể xem các phiên mà server công khai. Đặt giá, ví và chat cần tài khoản đăng nhập.
+
+## 8. Kịch bản kiểm thử luồng nghiệp vụ
+
+| Luồng | Kết quả cần thấy |
+| --- | --- |
+| Đăng ký, xác minh email, quên mật khẩu từ trang tài khoản (#25) | Chỉ cấp token sau khi xác minh. Nếu lỗi gửi OTP, người dùng có thể thử lại. Đặt lại thành công từ trang tài khoản đưa người dùng về đúng cửa sổ đang mở. |
+| Hồ sơ mua và bán (#24) | Bật **Tách hồ sơ**, đổi tên và ảnh bên bán, lưu rồi mở lại. Chi tiết phiên hiển thị được hồ sơ bán. Người khác có thể đặt giá, chủ sản phẩm bị từ chối kể cả sau khi đổi hồ sơ. |
+| Quyền quản trị | Tài khoản được nâng quyền vẫn bán và đặt giá được. Mở **Bán sản phẩm** để quản lý hàng của mình hoặc **Trang quản trị** để duyệt tin của hệ thống. |
+| Cấu hình theo môi trường (#31) | Thành viên dùng backend chung chỉ mở client. Khi chạy backend riêng, dùng `.env` ở gốc repo. Các biến đã đặt trong terminal được ưu tiên. |
+
+## 9. Kiểm thử tự động
+
+Tại thư mục chứa POM gốc, chạy cùng bộ kiểm tra với GitHub Actions:
+
+```powershell
+mvn "-Dmaven.repo.local=../.m2/repository" -Pstyle clean verify
+```
+
+Nếu PowerShell đang ở thư mục cha `baitaplon` và thư mục repo có tên `bidora`, chạy:
+
+```powershell
+mvn -f .\bidora\pom.xml "-Dmaven.repo.local=$PWD\.m2\repository" -Pstyle clean verify
+```
+
+Với bản clone còn tên `BaiTapLon-Ltnc-nhom10vip` trên máy, dùng `.\BaiTapLon-Ltnc-nhom10vip\pom.xml` cho tham số `-f`.
+
+- **OOP và Factory.** `UserFactory` tạo `Bidder`, `Seller` hoặc `Admin` từ tài khoản đã lưu. Các lớp triển khai `permissions()`. Cả bộ lọc JWT và lớp nghiệp vụ dùng các quyền này. ID dùng để chặn tự đặt giá luôn là ID tài khoản.
+- **Singleton và Observer.** `SessionData` giữ phiên đăng nhập chung của client. `AuctionRealtimeClient` thông báo cho các màn hình đã đăng ký nhận sự kiện. Server dùng Spring events để phát thay đổi sau giao dịch.
+- **JUnit.** Module `shared` kiểm tra quyền theo loại tài khoản và trạng thái. Module `server` kiểm tra qua Spring, MockMvc và H2, gồm nhiều người đặt giá đồng thời, đóng phiên, chọn người thắng, hồ sơ, đăng ký và OTP. Test email dùng hộp thư trong bộ nhớ. Module `client` kiểm tra xử lý phản hồi HTTP và điều hướng JavaFX. Test JavaFX cần màn hình hoặc Xvfb.
+- **CI.** Workflow `Maven verify` chạy cho push và pull request vào `dev` hoặc `main`, dùng Java 21, Xvfb, JUnit và Checkstyle. Việc triển khai backend thuộc cấu hình dịch vụ Render của nhóm.
+- **Chức năng nâng cao.** Đã có anti-sniping và biểu đồ lịch sử giá. Auto-bidding là mục tùy chọn chưa triển khai.
+
+### Đối chiếu các nhận xét về bản cũ
+
+Trong cây mã nguồn của `dev` hiện tại không còn `AuctionMockData`, `DemoBidHistory`, `ItemMock` hay hai `AuctionDetailController` như trong bản đánh giá. Dữ liệu minh họa để xem giao diện nằm trong `PreviewServer` và chỉ được khởi động bằng `--preview`.
+
+Cấu hình ứng dụng hiện lấy mật khẩu TiDB và khóa JWT từ biến môi trường. Nếu thông tin xác thực từng xuất hiện trong commit cũ, người quản lý dịch vụ cần thay thông tin ở nhà cung cấp và cập nhật Environment trên Render. Xóa giá trị trong bản hiện tại không thu hồi giá trị đã lộ.
+
+
+### Ảnh sản phẩm và chuyển động giao diện
+
+Form đăng bán có chọn ảnh, xem trước và gỡ ảnh. Client thu nhỏ JPEG/PNG tối đa 1280 px, gửi qua API sản phẩm và server lưu trong cột `items.image` của MySQL/TiDB. Bản backend mới cần được deploy để lưu và trả ảnh. Bản xem thử lưu ảnh trong bộ nhớ đến khi đóng app.
+
+Các cửa sổ tài khoản, ví, hồ sơ, chi tiết sản phẩm và hộp xác nhận dùng chung chuyển động mở/đóng với chat. Bảng màu dùng nền ngà/than chì và điểm nhấn hổ phách.
+
+Cấu hình database, mail và JWT dùng biến môi trường hoặc `config/application-local.properties`. Google OAuth dùng profile `google` với `GOOGLE_CLIENT_ID` và `GOOGLE_CLIENT_SECRET`. Nếu mật khẩu hoặc client secret từng được chia sẻ hay commit, nhóm cần thay giá trị ở nhà cung cấp và cập nhật môi trường chạy.
+
+
+### GitHub Actions
+
+Workflow `.github/workflows/maven.yml` chạy Java 21, Maven build, JUnit và Checkstyle khi push hoặc mở pull request vào `main`, `dev` và `feature/**`. Test JavaFX chạy bằng Xvfb. Báo cáo kiểm tra được lưu trong mục Artifacts của lần chạy trong 7 ngày. Test backend dùng database tạm riêng theo cấu hình test.
+
+Sau khi push, vào tab Actions → Bidora CI để xem từng bước và tải báo cáo. Có thể chạy lại bằng Run workflow khi workflow đã có trên nhánh mặc định.
+
+Ghi chu deploy cho nhom backend nam trong [docs/RENDER.md](docs/RENDER.md), gom schema anh san pham, API ho so, WebSocket va cac buoc kiem tra realtime sau deploy. Theme dung chung cac bien mau trong \`theme.css\`; \`dark.css\` chi thay bang mau.

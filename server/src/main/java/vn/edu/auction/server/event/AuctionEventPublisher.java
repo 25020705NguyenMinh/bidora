@@ -82,14 +82,14 @@ public class AuctionEventPublisher extends TextWebSocketHandler {
         try {
             message = new TextMessage(mapper.writeValueAsString(event));
         } catch (IOException e) {
-            log.error("Không serialize được AuctionEvent", e);
+            log.error("Khong serialize duoc AuctionEvent", e);
             return;
         }
         sessions.values().forEach(s -> {
             try {
                 if (s.isOpen()) s.sendMessage(message);
             } catch (Exception e) {
-                log.warn("Gửi event thất bại, bỏ session {}", s.getId());
+                log.warn("Gui event that bai, bo session {}", s.getId());
                 sessions.remove(s.getId());
             }
         });

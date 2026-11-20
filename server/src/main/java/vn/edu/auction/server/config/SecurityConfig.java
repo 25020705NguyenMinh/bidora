@@ -71,7 +71,7 @@ public class SecurityConfig {
                                 "/api/auth/me"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auctions", "/api/auctions/{id:[0-9]+}",
-                                "/api/auctions/{id:[0-9]+}/bids").permitAll()
+                                "/api/auctions/{id:[0-9]+}/bids", "/api/users/{id:[0-9]+}/profile/{side:buyer|seller}").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

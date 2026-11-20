@@ -77,7 +77,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EmailSendException.class)
     public ResponseEntity<ApiErrorResponse> handleEmailSend(
             EmailSendException ex, HttpServletRequest request) {
-        return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header("X-Bidora-Error", "OTP_DELIVERY_FAILED")
+                .body(new ApiErrorResponse(LocalDateTime.now(), 503, "Service Unavailable", ex.getMessage(), request.getRequestURI()));
     }
     // Lỗi còn lại: chỉ ghi log phía server, trả thông báo chung cho client
     @ExceptionHandler(Exception.class)
@@ -87,7 +89,7 @@ public class GlobalExceptionHandler {
             HttpStatus status = HttpStatus.valueOf(errorResponse.getStatusCode().value());
             return build(status, status.getReasonPhrase(), request);
         }
-        log.error("Lỗi không mong muốn tại {}", request.getRequestURI(), ex);
+        log.error("Loi khong mong muon tai {}", request.getRequestURI(), ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR,
                 "Đã xảy ra lỗi hệ thống, vui lòng thử lại sau", request);
     }

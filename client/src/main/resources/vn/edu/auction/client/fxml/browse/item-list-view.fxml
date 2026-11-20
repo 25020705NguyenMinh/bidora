@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import vn.edu.auction.client.I18n?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <VBox xmlns:fx="http://javafx.com/fxml/1" fx:controller="vn.edu.auction.client.browse.ItemListController"
       spacing="12" styleClass="catalog-view" stylesheets="@../../css/catalog.css">
     <HBox fx:id="guestPanel" alignment="CENTER_LEFT" spacing="18" styleClass="catalog-guest">
-        <Label text="Đăng nhập để xem danh sách sản phẩm đang niêm yết." wrapText="true" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-        <Button text="Đăng nhập" minWidth="-Infinity" styleClass="primary-button" onAction="#signIn"/>
+        <Label I18n.caption="browse.signInItems" wrapText="true" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+        <Button I18n.caption="account.signIn" minWidth="-Infinity" styleClass="primary-button" onAction="#signIn"/>
     </HBox>
     <HBox fx:id="tools" spacing="10" alignment="CENTER_LEFT">
-        <TextField fx:id="searchField" id="itemSearch" promptText="Tìm theo tên sản phẩm" accessibleText="Tìm theo tên sản phẩm"
+        <TextField fx:id="searchField" id="itemSearch" I18n.prompt="browse.search" I18n.accessible="browse.search"
                    minWidth="0" HBox.hgrow="ALWAYS" styleClass="catalog-search"/>
-        <Button fx:id="refreshButton" text="Làm mới" onAction="#loadItems" minWidth="-Infinity" styleClass="quiet-button"/>
+        <Button fx:id="refreshButton" I18n.caption="common.refresh" onAction="#loadItems" minWidth="-Infinity" styleClass="quiet-button"/>
     </HBox>
     <Label fx:id="messageLabel" wrapText="true" styleClass="catalog-message"/>
     <ScrollPane fx:id="catalogScroll" fitToWidth="true" hbarPolicy="NEVER" styleClass="catalog-scroll" VBox.vgrow="ALWAYS">
