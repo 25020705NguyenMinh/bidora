@@ -498,6 +498,7 @@ public class AuthController {
                 case FORBIDDEN -> serverMessage != null ? serverMessage : I18n.get("error.forbidden");
                 case RATE_LIMITED -> serverMessage != null ? serverMessage : I18n.get("error.throttle");
                 case UNAUTHORIZED -> I18n.get("error.login.invalid");
+                case NOT_FOUND -> I18n.get("error.notFound");  
                 case CONFLICT -> I18n.get("error.email.exists");
                 case OTP_DELIVERY -> I18n.get("error.otp.delivery");
                 case SERVER -> I18n.get("error.server");

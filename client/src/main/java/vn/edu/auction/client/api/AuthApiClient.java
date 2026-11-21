@@ -193,6 +193,7 @@ public class AuthApiClient {
             BAD_REQUEST,   // 400: dữ liệu sai (kể cả nhập sai OTP)
             UNAUTHORIZED,  // 401: sai email/mật khẩu hoặc token không hợp lệ
             FORBIDDEN,     // 403: tài khoản chưa xác minh / bị khóa
+            NOT_FOUND,     // 404: endpoint/dữ liệu không có (thường do server chưa deploy bản mới)
             CONFLICT,      // 409: email đã tồn tại
             RATE_LIMITED,  // 429: xin mã OTP quá nhanh
             OTP_DELIVERY,

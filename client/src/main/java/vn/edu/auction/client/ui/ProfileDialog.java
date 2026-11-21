@@ -75,6 +75,7 @@ public final class ProfileDialog {
         g.add(msg, 0, 10, 2, 1);
         var publicProfiles = I18n.caption(new Button(), "profile.title");
         publicProfiles.setOnAction(e -> TradingProfileDialog.edit(g.getScene().getWindow(), onSaved));
+        publicProfiles.setDisable(true); // chỉ mở được khi hồ sơ đã tải thành công
         g.add(publicProfiles, 1, 11);
         javafx.scene.layout.StackPane avatar = TradingProfileDialog.avatar("", 64);
         Button photo = I18n.caption(new Button(), "profile.choosePhoto");
@@ -89,6 +90,7 @@ public final class ProfileDialog {
             profiles[0] = current;
             avatar.getChildren().setAll(TradingProfileDialog.avatar((SessionData.getInstance().isSellerProfile() ? current.seller() : current.buyer()).avatar(), 64));
             photo.setDisable(false);
+            publicProfiles.setDisable(false);
         }, error -> I18n.track(msg.textProperty(), () -> BaseApiClient.describe(error)));
         photo.setOnAction(event -> {
             try {

@@ -24,6 +24,7 @@ public final class TradingProfileDialog {
     private static Dialog<Void> dialog(Window owner, String titleKey, VBox content) {
         Dialog<Void> d = new Dialog<>();
         d.initOwner(owner);
+        d.initModality(javafx.stage.Modality.WINDOW_MODAL); // tránh mở chồng nhiều dialog 
         I18n.localize(d.titleProperty(), titleKey);
         content.setPadding(new Insets(14));
         d.getDialogPane().setContent(content);
