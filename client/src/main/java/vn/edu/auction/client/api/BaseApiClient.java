@@ -74,6 +74,7 @@ public abstract class BaseApiClient {
             case 400 -> ApiException.Type.BAD_REQUEST;
             case 401 -> ApiException.Type.UNAUTHORIZED;
             case 403 -> ApiException.Type.FORBIDDEN;
+            case 404 -> ApiException.Type.NOT_FOUND; 
             case 409 -> ApiException.Type.CONFLICT;
             case 429 -> ApiException.Type.RATE_LIMITED;
             default -> status >= 500 ? ApiException.Type.SERVER : ApiException.Type.UNKNOWN;
@@ -93,6 +94,8 @@ public abstract class BaseApiClient {
     /** Chuyển lỗi thành câu dễ hiểu để hiện lên label, không bao giờ in stack trace. */
     public static String describe(Throwable t) {
         if (!(t instanceof ApiException e)) return I18n.get("error.unexpected");
+        // 404: bỏ qua chữ thô của server (vd. "Not Found") và báo câu dễ hiểu
+        if (e.getType() == ApiException.Type.NOT_FOUND) return I18n.get("error.notFound");
         if (I18n.isVietnamese() && e.getServerMessage() != null) return e.getServerMessage();
         return switch (e.getType()) {
             case NETWORK -> I18n.get("error.offline");
