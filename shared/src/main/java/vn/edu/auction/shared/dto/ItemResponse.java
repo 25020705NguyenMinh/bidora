@@ -6,6 +6,10 @@ import vn.edu.auction.shared.enums.ItemStatus;
 import java.math.BigDecimal;
 
 public class ItemResponse {
+    private String image;
+    public String getImage() { return image; }
+    public void setImage(String image) { this.image = image; }
+
 
     private Long id;
     private Long sellerId;

@@ -21,4 +21,9 @@ public interface AuctionRepository extends JpaRepository<AuctionEntity, Long> {
     @Query("select a.id from AuctionEntity a where a.status in :statuses and a.endTime <= :now")
     List<Long> findExpiredIds(@Param("statuses") java.util.Collection<AuctionStatus> statuses,
                               @Param("now") java.time.LocalDateTime now);
+
+    /** Các phiên đã lên lịch (OPEN) và đã tới giờ bắt đầu, cần chuyển sang RUNNING. */
+    @Query("select a.id from AuctionEntity a where a.status = vn.edu.auction.shared.enums.AuctionStatus.OPEN "
+            + "and a.startTime <= :now and a.endTime > :now order by a.startTime asc, a.id asc")
+    List<Long> findDueToStartIds(@Param("now") java.time.LocalDateTime now);
 }

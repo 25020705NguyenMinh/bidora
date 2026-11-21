@@ -9,15 +9,15 @@
 .header-label {
     -fx-font-size: 24px;
     -fx-font-weight: bold;
-    -fx-text-fill: #2c3e50;
+    -fx-text-fill: #43403c;
     -fx-padding: 0 0 10px 0;
 }
 
 /* Kiểu nút bấm mặc định */
 .button {
     -fx-background-color: #e9ecef;
-    -fx-text-fill: #495057;
-    -fx-border-color: #ced4da;
+    -fx-text-fill: #70604a;
+    -fx-border-color: #e6cfaa;
     -fx-border-radius: 4px;
     -fx-background-radius: 4px;
     -fx-cursor: hand;
@@ -78,7 +78,7 @@
 
 .subtitle-label {
     -fx-font-size: 13px;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: #99713d;
 }
 
 .requirements-box {
@@ -91,7 +91,7 @@
 
 .requirements-title {
     -fx-font-weight: bold;
-    -fx-text-fill: #343a40;
+    -fx-text-fill: #3f3c38;
     -fx-font-size: 13px;
 }
 
@@ -108,7 +108,7 @@
 
 .text-field, .password-field {
     -fx-background-color: #ffffff;
-    -fx-border-color: #ced4da;
+    -fx-border-color: #e6cfaa;
     -fx-border-radius: 6px;
     -fx-background-radius: 6px;
     -fx-padding: 8px 12px;
@@ -121,7 +121,7 @@
 }
 
 .password-container {
-    -fx-border-color: #ced4da;
+    -fx-border-color: #e6cfaa;
     -fx-border-radius: 6px;
     -fx-background-radius: 6px;
     -fx-background-color: #ffffff;

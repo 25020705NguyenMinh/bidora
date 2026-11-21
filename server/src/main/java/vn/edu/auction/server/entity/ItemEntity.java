@@ -23,6 +23,12 @@ public class ItemEntity {
     @Column(name = "status", nullable = false)
     private ItemStatus status;
 
+    @Column(name = "image", columnDefinition = "LONGTEXT")
+    private String image;
+
+    public String getImage() { return image; }
+    public void setImage(String image) { this.image = image; }
+
     public ItemEntity() {}
 
     public Long getId() { return id; }

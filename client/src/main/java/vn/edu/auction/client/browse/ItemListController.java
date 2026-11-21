@@ -1,5 +1,7 @@
 package vn.edu.auction.client.browse;
 
+import vn.edu.auction.client.I18n;
+
 import java.util.List;
 import java.util.Locale;
 import javafx.fxml.FXML;
@@ -9,7 +11,6 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
-import vn.edu.auction.client.api.BaseApiClient;
 import vn.edu.auction.client.api.FxAsync;
 import vn.edu.auction.client.api.ItemApiClient;
 import vn.edu.auction.client.model.SessionData;
@@ -37,14 +38,14 @@ public class ItemListController extends CatalogController {
         long version = ++loadVersion;
         boolean loggedIn = SessionData.getInstance().isLoggedIn();
         items = List.of();
-        prepareLoad(loggedIn, "Đang tải sản phẩm…");
+        prepareLoad(loggedIn, "item.loading");
         if (!loggedIn) return;
         FxAsync.run(itemApi::getAllItems, list -> {
             if (version != loadVersion) return;
             items = list;
             renderCards();
         }, error -> {
-            if (version == loadVersion) showLoadError(BaseApiClient.describe(error));
+            if (version == loadVersion) showLoadError(error);
         });
     }
 
@@ -53,26 +54,28 @@ public class ItemListController extends CatalogController {
         grid.getChildren().clear();
         for (ItemResponse item : items) {
             if (item.getName() == null || !item.getName().toLowerCase(Locale.ROOT).contains(query)) continue;
-            grid.getChildren().add(new MarketCard(item.getName(), "Giá khởi điểm", status(item.getStatus()),
-                    UiKit.money(item.getStartingPrice()), "Người bán #" + item.getSellerId(),
-                    "Xem sản phẩm", () -> showDetail(item)));
+            MarketCard card = new MarketCard(item.getName(), I18n.get("item.startingPrice"), status(item.getStatus()),
+                    UiKit.money(item.getStartingPrice()), I18n.get("item.sellerId") + item.getSellerId(),
+                    I18n.get("item.open"), () -> showDetail(item));
+            card.setProductImage(item.getImage(), item.getName());
+            grid.getChildren().add(card);
         }
-        showResultCount(grid.getChildren().size(), "sản phẩm");
+        showResultCount(grid.getChildren().size(), "item");
     }
 
     private void showDetail(ItemResponse item) {
         Dialog<Void> dialog = new Dialog<>();
         dialog.initOwner(grid.getScene().getWindow());
-        dialog.setTitle("Chi tiết sản phẩm");
+        I18n.localize(dialog.titleProperty(), "item.details");
         dialog.setHeaderText(item.getName());
-        Label caption = new Label("Giá khởi điểm");
+        Label caption = I18n.caption(new Label(), "item.startingPrice");
         caption.getStyleClass().add("detail-caption");
         Label price = new Label(UiKit.money(item.getStartingPrice()));
         price.getStyleClass().add("detail-price");
         Label description = new Label(item.getDescription() == null || item.getDescription().isBlank()
-                ? "Chưa có mô tả sản phẩm." : item.getDescription());
+                ? I18n.get("item.noDescription") : item.getDescription());
         description.setWrapText(true);
-        var photo = MarketCard.photo(MarketCard.illustrationIndex(item.getName()), 210);
+        var photo = vn.edu.auction.client.ui.ProductPhoto.view(item.getImage(), item.getName(), 210);
         photo.getStyleClass().add("detail-photo");
         VBox content = new VBox(12, photo, new Label(status(item.getStatus())), new VBox(2, caption, price), description);
         ScrollPane scroll = new ScrollPane(content);
@@ -82,20 +85,21 @@ public class ItemListController extends CatalogController {
         scroll.setPrefViewportHeight(395);
         scroll.getStyleClass().add("detail-scroll");
         dialog.getDialogPane().setContent(scroll);
-        dialog.getDialogPane().getButtonTypes().add(new ButtonType("Đóng", ButtonBar.ButtonData.CANCEL_CLOSE));
+        dialog.getDialogPane().getButtonTypes().add(new ButtonType(I18n.get("common.close"), ButtonBar.ButtonData.CANCEL_CLOSE));
         dialog.setResizable(true);
         UiTheme.apply(dialog.getDialogPane());
+        vn.edu.auction.client.ui.UiMotion.install(dialog);
         dialog.getDialogPane().getStylesheets().add(getClass().getResource("/vn/edu/auction/client/css/catalog.css").toExternalForm());
         dialog.show();
     }
 
     private static String status(ItemStatus value) {
-        if (value == null) return "Chưa rõ trạng thái";
+        if (value == null) return I18n.get("status.unknown");
         return switch (value) {
-            case ACTIVE -> "Đang niêm yết";
-            case DRAFT -> "Chờ phê duyệt";
-            case SOLD -> "Đã bán";
-            case REMOVED -> "Đã gỡ";
+            case ACTIVE -> I18n.get("status.listed");
+            case DRAFT -> I18n.get("status.pending");
+            case SOLD -> I18n.get("status.sold");
+            case REMOVED -> I18n.get("status.removed");
         };
     }
 }

@@ -1,5 +1,7 @@
 package vn.edu.auction.client.ui;
 
+import vn.edu.auction.client.I18n;
+
 import java.text.Normalizer;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -33,9 +35,12 @@ public final class MarketCard extends VBox {
                       String action, Runnable onAction) {
         getStyleClass().add("listing-card");
         setMaxWidth(Double.MAX_VALUE);
-        StackPane photo = photo(illustrationIndex(title), 158);
+        StackPane photo = photo(illustrationIndex(title), 180);
         Label name = label("listing-title");
         name.setText(title);
+        name.setWrapText(true);
+        name.setMinWidth(0);
+        name.setMaxHeight(52);
         Label priceCaption = label("listing-caption");
         priceCaption.setText(caption);
         Button open = new Button(action, UiKit.icon("M4 9 H16 M11 4 L16 9 L11 14"));
@@ -59,6 +64,10 @@ public final class MarketCard extends VBox {
                 zoom.playFromStart();
             });
         }
+    }
+
+    public void setProductImage(String image, String name) {
+        if (image != null && !image.isBlank()) getChildren().set(0, ProductPhoto.view(image, name, 180));
     }
 
     public void updateQuote(String status, String amount, String secondary) {
@@ -91,7 +100,7 @@ public final class MarketCard extends VBox {
         clip.setArcHeight(20);
         photo.setClip(clip);
         if (index < 0 || index >= PHOTOS.length) {
-            Label empty = new Label("Chưa có ảnh", UiKit.icon(
+            Label empty = new Label(I18n.get("item.noPhoto"), UiKit.icon(
                     "M3 4 H21 V20 H3 Z M3 16 L9 10 L15 16 L18 13 L21 16 M15 8 H16"));
             empty.getStyleClass().add("listing-secondary");
             empty.setContentDisplay(ContentDisplay.TOP);
@@ -101,7 +110,7 @@ public final class MarketCard extends VBox {
         } else {
             Region art = new Region();
             art.getStyleClass().addAll("listing-art", PHOTOS[index]);
-            Label note = new Label("Ảnh minh họa");
+            Label note = I18n.caption(new Label(), "item.illustration");
             note.getStyleClass().add("listing-image-note");
             StackPane.setAlignment(note, Pos.BOTTOM_LEFT);
             StackPane.setMargin(note, new Insets(0, 0, 8, 8));
@@ -113,7 +122,7 @@ public final class MarketCard extends VBox {
     public static VBox loading() {
         Region image = new Region();
         image.getStyleClass().add("listing-skeleton-image");
-        image.setPrefHeight(158);
+        image.setPrefHeight(180);
         Region title = new Region();
         title.getStyleClass().add("listing-skeleton-line");
         title.setMaxWidth(160);

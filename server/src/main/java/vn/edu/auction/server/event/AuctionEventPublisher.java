@@ -67,6 +67,12 @@ public class AuctionEventPublisher extends TextWebSocketHandler {
         afterCommit(() -> broadcast(ev));
     }
 
+    /** Phiên lên lịch vừa tới giờ và chuyển sang RUNNING. */
+    public void publishAuctionStarted(AuctionEntity auction) {
+        AuctionEvent ev = AuctionEvent.from(AuctionEvent.AUCTION_STARTED, auction);
+        afterCommit(() -> broadcast(ev));
+    }
+
     private void afterCommit(Runnable action) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -82,14 +88,14 @@ public class AuctionEventPublisher extends TextWebSocketHandler {
         try {
             message = new TextMessage(mapper.writeValueAsString(event));
         } catch (IOException e) {
-            log.error("Không serialize được AuctionEvent", e);
+            log.error("Khong serialize duoc AuctionEvent", e);
             return;
         }
         sessions.values().forEach(s -> {
             try {
                 if (s.isOpen()) s.sendMessage(message);
             } catch (Exception e) {
-                log.warn("Gửi event thất bại, bỏ session {}", s.getId());
+                log.warn("Gui event that bai, bo session {}", s.getId());
                 sessions.remove(s.getId());
             }
         });

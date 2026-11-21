@@ -1,8 +1,9 @@
 package vn.edu.auction.client.controller;
 
+import vn.edu.auction.client.I18n;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -17,9 +18,9 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.Dialog;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import vn.edu.auction.client.api.AdminApiClient;
 import vn.edu.auction.client.api.AuctionApiClient;
@@ -27,6 +28,7 @@ import vn.edu.auction.client.api.BaseApiClient;
 import vn.edu.auction.client.api.FxAsync;
 import vn.edu.auction.client.api.ItemApiClient;
 import vn.edu.auction.client.model.SessionData;
+import vn.edu.auction.client.ui.DateTimePicker;
 import vn.edu.auction.client.ui.UiKit;
 import vn.edu.auction.shared.dto.AuctionRequest;
 import vn.edu.auction.shared.dto.ItemRequest;
@@ -42,7 +44,6 @@ import vn.edu.auction.shared.enums.UserRole;
  */
 public class ItemManagementController {
 
-    @FXML private Label kickerLabel;
     @FXML private Label titleLabel;
     @FXML private Label subtitleLabel;
     @FXML private Label tableTitleLabel;
@@ -67,6 +68,24 @@ public class ItemManagementController {
     @FXML private Label formTitleLabel;
     @FXML private Label formSubtitleLabel;
     @FXML private TextField nameField;
+    @FXML private javafx.scene.layout.StackPane productPhoto;
+    @FXML private Button chooseImageButton, removeImageButton;
+    private String selectedImage = "";
+
+    private void showImage(String image) {
+        selectedImage = image == null ? "" : image;
+        productPhoto.getChildren().setAll(vn.edu.auction.client.ui.ProductPhoto.view(selectedImage, "", 140));
+    }
+
+    @FXML private void chooseImage() {
+        try {
+            String image = vn.edu.auction.client.ui.ProductPhoto.choose(nameField.getScene().getWindow());
+            if (image != null) showImage(image);
+        } catch (java.io.IOException | RuntimeException ex) { showLocalizedMessage("product.imageError"); }
+    }
+
+    @FXML private void removeImage() { showImage(""); }
+
     @FXML private TextArea descriptionArea;
     @FXML private TextField startingPriceField;
     @FXML private VBox feedbackBox;
@@ -75,7 +94,7 @@ public class ItemManagementController {
     @FXML private Button createItemButton;
     @FXML private Button approveButton;
     @FXML private Button rejectButton;
-    @FXML private HBox bottomActionRow;
+    @FXML private javafx.scene.layout.FlowPane bottomActionRow;
     @FXML private Button updateButton;
     @FXML private Button deleteButton;
     @FXML private Button clearButton;
@@ -93,9 +112,15 @@ public class ItemManagementController {
     private enum AdminFilter { PENDING, UPCOMING, ACTIVE, ALL }
     private AdminFilter currentFilter = AdminFilter.PENDING;
 
+    private final boolean isAdmin;
+
+    public ItemManagementController() { this(false); }
+    public ItemManagementController(boolean moderation) {
+        isAdmin = moderation && SessionData.getInstance().getRole() == UserRole.ADMIN;
+    }
+
     @FXML
     public void initialize() {
-        boolean isAdmin = SessionData.getInstance().getRole() == UserRole.ADMIN;
 
         idColumn.setCellValueFactory(row -> new ReadOnlyObjectWrapper<>(row.getValue().getId()));
         sellerColumn.setCellValueFactory(row -> new ReadOnlyObjectWrapper<>(
@@ -108,6 +133,7 @@ public class ItemManagementController {
         itemTable.setItems(itemList);
         itemTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             if (newSelection != null) {
+                showImage(newSelection.getImage());
                 nameField.setText(newSelection.getName());
                 descriptionArea.setText(newSelection.getDescription());
                 startingPriceField.setText(newSelection.getStartingPrice().toPlainString());
@@ -120,19 +146,22 @@ public class ItemManagementController {
             }
         });
 
+        I18n.onChange(itemTable, itemTable::refresh);
+        showImage("");
+        chooseImageButton.setDisable(isAdmin);
+        removeImageButton.setDisable(isAdmin);
         setupRoleView(isAdmin);
         loadItems();
     }
 
     private void setupRoleView(boolean isAdmin) {
         if (isAdmin) {
-            if (kickerLabel != null) kickerLabel.setText("KHÔNG GIAN QUẢN TRỊ");
-            if (titleLabel != null) titleLabel.setText("Quản lý sản phẩm");
-            if (subtitleLabel != null) subtitleLabel.setText("Phê duyệt sản phẩm, theo dõi danh sách chờ duyệt, sắp bán, đang bán.");
-            if (tableTitleLabel != null) tableTitleLabel.setText("Danh sách sản phẩm hệ thống");
-            if (tableSubtitleLabel != null) tableSubtitleLabel.setText("Chọn một sản phẩm để xem chi tiết và phê duyệt.");
-            if (formTitleLabel != null) formTitleLabel.setText("Chi tiết & Phê duyệt");
-            if (formSubtitleLabel != null) formSubtitleLabel.setText("Phê duyệt hoặc từ chối, kèm feedback để người bán đọc trong thông báo.");
+            if (titleLabel != null) I18n.localize(titleLabel.textProperty(), "manage.title");
+            if (subtitleLabel != null) I18n.localize(subtitleLabel.textProperty(), "manage.adminIntro");
+            if (tableTitleLabel != null) I18n.localize(tableTitleLabel.textProperty(), "manage.inventory");
+            if (tableSubtitleLabel != null) I18n.localize(tableSubtitleLabel.textProperty(), "manage.selectReview");
+            if (formTitleLabel != null) I18n.localize(formTitleLabel.textProperty(), "manage.review");
+            if (formSubtitleLabel != null) I18n.localize(formSubtitleLabel.textProperty(), "manage.feedbackHint");
 
             if (createAuctionButton != null) {
                 createAuctionButton.setVisible(false);
@@ -177,9 +206,8 @@ public class ItemManagementController {
                 deleteButton.setManaged(false);
             }
         } else {
-            if (kickerLabel != null) kickerLabel.setText("KHÔNG GIAN BÁN HÀNG");
-            if (titleLabel != null) titleLabel.setText("Bán sản phẩm");
-            if (subtitleLabel != null) subtitleLabel.setText("Thêm sản phẩm, theo dõi phê duyệt và tạo phiên đấu giá. Feedback của quản trị viên sẽ hiện ở chuông thông báo.");
+            if (titleLabel != null) I18n.localize(titleLabel.textProperty(), "seller.open");
+            if (subtitleLabel != null) I18n.localize(subtitleLabel.textProperty(), "manage.sellerIntro");
             if (createAuctionButton != null) {
                 createAuctionButton.setVisible(true);
                 createAuctionButton.setManaged(true);
@@ -221,31 +249,30 @@ public class ItemManagementController {
             if (deleteButton != null) {
                 deleteButton.setVisible(true);
                 deleteButton.setManaged(true);
-                deleteButton.setText("Xóa");
+                I18n.localize(deleteButton.textProperty(), "common.delete");
             }
         }
     }
 
     private static String statusText(ItemResponse i) {
         if (i == null || i.getStatus() == null) return "—";
-        if (i.getStatus() == ItemStatus.DRAFT) return "Chờ phê duyệt";
+        if (i.getStatus() == ItemStatus.DRAFT) return I18n.get("status.pending");
         if (i.getStatus() == ItemStatus.ACTIVE) {
-            if (i.getAuctionStatus() == null) return "Đã duyệt (Chờ lên phiên)";
-            if (i.getAuctionStatus() == AuctionStatus.OPEN) return "Sắp bán (Đã lên lịch)";
-            if (i.getAuctionStatus() == AuctionStatus.RUNNING) return "Đang bán (Đang đấu giá)";
-            if (i.getAuctionStatus() == AuctionStatus.FINISHED || i.getAuctionStatus() == AuctionStatus.PAID) return "Đã kết thúc";
-            if (i.getAuctionStatus() == AuctionStatus.CANCELED) return "Đã hủy phiên";
-            return "Đã duyệt";
+            if (i.getAuctionStatus() == null) return I18n.get("manage.approvedWaiting");
+            if (i.getAuctionStatus() == AuctionStatus.OPEN) return I18n.get("manage.scheduled");
+            if (i.getAuctionStatus() == AuctionStatus.RUNNING) return I18n.get("manage.live");
+            if (i.getAuctionStatus() == AuctionStatus.FINISHED || i.getAuctionStatus() == AuctionStatus.PAID) return I18n.get("status.ended");
+            if (i.getAuctionStatus() == AuctionStatus.CANCELED) return I18n.get("manage.cancelled");
+            return I18n.get("status.approved");
         }
-        if (i.getStatus() == ItemStatus.SOLD) return "Đã bán";
-        if (i.getStatus() == ItemStatus.REMOVED) return "Đã gỡ";
+        if (i.getStatus() == ItemStatus.SOLD) return I18n.get("status.sold");
+        if (i.getStatus() == ItemStatus.REMOVED) return I18n.get("status.removed");
         return i.getStatus().name();
     }
 
     public void loadItems() {
-        boolean isAdmin = SessionData.getInstance().getRole() == UserRole.ADMIN;
         System.out.println("[ItemManagement] loadItems - isAdmin: " + isAdmin + ", role: " + SessionData.getInstance().getRole() + ", userId: " + SessionData.getInstance().getUserId());
-        showMessage("Đang tải danh sách sản phẩm...");
+        showLocalizedMessage("manage.loading");
         if (isAdmin) {
             FxAsync.run(() -> {
                 try {
@@ -253,58 +280,57 @@ public class ItemManagementController {
                     return adminApi.allItems();
                 } catch (vn.edu.auction.client.api.AuthApiClient.ApiException ex) {
                     // Server cũ chưa có /api/admin/items: vẫn lấy được danh sách chờ duyệt để duyệt sản phẩm
-                    System.err.println("[ItemManagement] /api/admin/items lỗi (" + ex.getMessage() + "), chuyển sang /pending");
+                    System.err.println("[ItemManagement] /api/admin/items loi (" + ex.getMessage() + "), chuyen sang /pending");
                     pendingOnly = true;
                     return adminApi.pendingItems();
                 }
             }, all -> {
                 allAdminItems = all;
-                System.out.println("[ItemManagement] admin items nhận được: " + all.size());
+                System.out.println("[ItemManagement] admin items nhan duoc: " + all.size());
                 for (var item : all) {
-                    System.out.println("  - id=" + item.getId() + " status=" + item.getStatus() + " name=" + item.getName());
+                    System.out.println("  - id=" + item.getId() + " status=" + item.getStatus());
                 }
                 long pendingCount = all.stream().filter(i -> i.getStatus() == ItemStatus.DRAFT || i.getStatus() == null).count();
                 long upcomingCount = all.stream().filter(i -> i.getStatus() == ItemStatus.ACTIVE && (i.getAuctionStatus() == null || i.getAuctionStatus() == AuctionStatus.OPEN)).count();
                 long activeCount = all.stream().filter(i -> i.getAuctionStatus() == AuctionStatus.RUNNING).count();
                 long allCount = all.size();
 
-                if (filterPendingBtn != null) filterPendingBtn.setText("Cần phê duyệt (" + pendingCount + ")");
-                if (filterUpcomingBtn != null) filterUpcomingBtn.setText("Sắp bán (" + upcomingCount + ")");
-                if (filterActiveBtn != null) filterActiveBtn.setText("Đang bán (" + activeCount + ")");
-                if (filterAllBtn != null) filterAllBtn.setText("Tất cả (" + allCount + ")");
+                if (filterPendingBtn != null) I18n.localize(filterPendingBtn.textProperty(), "manage.pendingFilter", pendingCount);
+                if (filterUpcomingBtn != null) I18n.localize(filterUpcomingBtn.textProperty(), "manage.upcomingFilter", upcomingCount);
+                if (filterActiveBtn != null) I18n.localize(filterActiveBtn.textProperty(), "manage.liveFilter", activeCount);
+                if (filterAllBtn != null) I18n.localize(filterAllBtn.textProperty(), "manage.allFilter", allCount);
 
                 applyFilter();
                 if (pendingOnly) {
-                    showMessage("Server chưa hỗ trợ xem toàn bộ sản phẩm nên chỉ hiện danh sách chờ duyệt ("
-                            + all.size() + "). Deploy lại server để dùng đủ các bộ lọc.");
+                    showLocalizedMessage("manage.limited", all.size());
                 }
             }, err -> {
-                System.err.println("[ItemManagement] admin items lỗi: " + err.getMessage());
+                System.err.println("[ItemManagement] admin items loi: " + err.getMessage());
                 err.printStackTrace();
                 String msg = BaseApiClient.describe(err);
-                showMessage("Lỗi: " + msg);
+                showLocalizedMessage("common.errorPrefix", msg);
                 new Alert(javafx.scene.control.Alert.AlertType.ERROR, 
-                    "Không thể tải danh sách sản phẩm:\n\n" + msg, 
+                    I18n.get("manage.loadError") + msg,
                     javafx.scene.control.ButtonType.OK).showAndWait();
             });
         } else {
             Long me = SessionData.getInstance().getUserId();
             FxAsync.run(itemApi::getAllItems, all -> {
-                System.out.println("[ItemManagement] seller items nhận được: " + all.size() + ", me=" + me);
+                System.out.println("[ItemManagement] seller items nhan duoc: " + all.size() + ", me=" + me);
                 for (var item : all) {
-                    System.out.println("  - id=" + item.getId() + " sellerId=" + item.getSellerId() + " status=" + item.getStatus() + " name=" + item.getName());
+                    System.out.println("  - id=" + item.getId() + " sellerId=" + item.getSellerId() + " status=" + item.getStatus());
                 }
                 var filtered = all.stream().filter(i -> i.getSellerId().equals(me)).toList();
                 System.out.println("[ItemManagement] sau filter theo sellerId: " + filtered.size());
                 itemList.setAll(filtered);
-                showMessage(itemList.isEmpty() ? "Bạn chưa có sản phẩm nào." : "Đã tải danh sách sản phẩm.");
+                showLocalizedMessage(itemList.isEmpty() ? "manage.empty" : "manage.loaded");
             }, err -> {
-                System.err.println("[ItemManagement] seller items lỗi: " + err.getMessage());
+                System.err.println("[ItemManagement] seller items loi: " + err.getMessage());
                 err.printStackTrace();
                 String msg = BaseApiClient.describe(err);
-                showMessage("Lỗi: " + msg);
+                showLocalizedMessage("common.errorPrefix", msg);
                 new Alert(javafx.scene.control.Alert.AlertType.ERROR, 
-                    "Không thể tải danh sách sản phẩm:\n\n" + msg, 
+                    I18n.get("manage.loadError") + msg,
                     javafx.scene.control.ButtonType.OK).showAndWait();
             });
         }
@@ -348,37 +374,37 @@ public class ItemManagementController {
         };
         System.out.println("[ItemManagement] applyFilter - filter: " + currentFilter + ", result size: " + filtered.size());
         itemList.setAll(filtered);
-        showMessage("Hiển thị " + filtered.size() + " sản phẩm.");
+        showLocalizedMessage("item.count", filtered.size());
     }
 
     @FXML
     public void handleApproveItem() {
         ItemResponse selected = itemTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            showMessage("Vui lòng chọn một sản phẩm cần phê duyệt!");
+            showLocalizedMessage("manage.pickApprove");
             return;
         }
         if (selected.getStatus() != ItemStatus.DRAFT) {
-            showMessage("Sản phẩm này không ở trạng thái chờ duyệt (đã được duyệt hoặc đã xử lý).");
+            showLocalizedMessage("manage.noLongerPending");
             return;
         }
         String feedback = feedbackArea != null ? feedbackArea.getText().trim() : "";
-        showMessage("Đang phê duyệt sản phẩm...");
+        showLocalizedMessage("manage.approving");
         FxAsync.run(() -> {
             adminApi.approveItem(selected.getId(), feedback);
             return Boolean.TRUE;
         }, ok -> {
-            showMessage("Đã phê duyệt sản phẩm \"" + selected.getName() + "\" và gửi thông báo (kèm feedback) tới người bán.");
+            showLocalizedMessage("manage.approvedItem", selected.getName());
             if (feedbackArea != null) feedbackArea.clear();
             clearForm();
             loadItems();
         }, err -> {
             if (err instanceof vn.edu.auction.client.api.AuthApiClient.ApiException e) {
-                System.err.println("admin items lỗi: type=" + e.getType() + ", http=" + e.getStatusCode());
+                System.err.println("admin items loi: type=" + e.getType() + ", http=" + e.getStatusCode());
             } else {
                 err.printStackTrace();
             }
-            showMessage(BaseApiClient.describe(err));
+            I18n.track(messageLabel.textProperty(), () -> BaseApiClient.describe(err));
         });
     }
 
@@ -386,28 +412,32 @@ public class ItemManagementController {
     public void handleRejectItem() {
         ItemResponse selected = itemTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            showMessage("Vui lòng chọn một sản phẩm để từ chối!");
+            showLocalizedMessage("manage.pickReject");
             return;
         }
         if (selected.getStatus() != ItemStatus.DRAFT) {
-            showMessage("Chỉ có thể từ chối sản phẩm đang ở trạng thái chờ duyệt.");
+            showLocalizedMessage("manage.pendingOnly");
             return;
         }
         String feedback = feedbackArea != null ? feedbackArea.getText().trim() : "";
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Bạn có chắc muốn từ chối sản phẩm \"" + selected.getName() + "\"?",
+                I18n.get("manage.rejectConfirm", selected.getName()),
                 ButtonType.YES, ButtonType.NO);
+        vn.edu.auction.client.ui.UiTheme.apply(confirm.getDialogPane());
+        vn.edu.auction.client.ui.UiMotion.install(confirm);
+        confirm.setHeaderText(null);
+        confirm.setTitle(I18n.get("common.confirm"));
         confirm.showAndWait().filter(b -> b == ButtonType.YES).ifPresent(b -> {
-            showMessage("Đang từ chối sản phẩm...");
+            showLocalizedMessage("manage.rejecting");
             FxAsync.run(() -> {
                 adminApi.rejectItem(selected.getId(), feedback);
                 return Boolean.TRUE;
             }, ok -> {
-                showMessage("Đã từ chối sản phẩm \"" + selected.getName() + "\" và gửi thông báo (kèm feedback) tới người bán.");
+                showLocalizedMessage("manage.rejectedItem", selected.getName());
                 if (feedbackArea != null) feedbackArea.clear();
                 clearForm();
                 loadItems();
-            }, err -> showMessage(BaseApiClient.describe(err)));
+            }, err -> I18n.track(messageLabel.textProperty(), () -> BaseApiClient.describe(err)));
         });
     }
 
@@ -416,35 +446,38 @@ public class ItemManagementController {
         ItemRequest request = readForm();
         if (request == null) return;
         FxAsync.run(() -> itemApi.createItem(request), created -> {
-            showMessage("Đã thêm sản phẩm. Đang chờ quản trị viên phê duyệt.");
+            showLocalizedMessage("manage.submitted");
             clearForm();
             loadItems();
-        }, err -> showMessage(BaseApiClient.describe(err)));
+        }, err -> I18n.track(messageLabel.textProperty(), () -> BaseApiClient.describe(err)));
     }
 
     @FXML
     public void handleUpdateItem() {
         ItemResponse selected = itemTable.getSelectionModel().getSelectedItem();
-        if (selected == null) { showMessage("Vui lòng chọn một sản phẩm từ bảng để sửa!"); return; }
+        if (selected == null) { showLocalizedMessage("manage.pickEdit"); return; }
         ItemRequest request = readForm();
         if (request == null) return;
         FxAsync.run(() -> itemApi.updateItem(selected.getId(), request), updated -> {
-            showMessage("Cập nhật sản phẩm thành công!");
+            showLocalizedMessage("manage.updated");
             clearForm();
             loadItems();
-        }, err -> showMessage(BaseApiClient.describe(err)));
+        }, err -> I18n.track(messageLabel.textProperty(), () -> BaseApiClient.describe(err)));
     }
 
     @FXML
     public void handleDeleteItem() {
         ItemResponse selected = itemTable.getSelectionModel().getSelectedItem();
-        if (selected == null) { showMessage("Vui lòng chọn một sản phẩm để xóa!"); return; }
-        boolean isAdmin = SessionData.getInstance().getRole() == UserRole.ADMIN;
+        if (selected == null) { showLocalizedMessage("manage.pickDelete"); return; }
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Bạn có chắc chắn muốn xóa sản phẩm \"" + selected.getName() + "\" không?",
+                I18n.get("manage.deleteConfirm", selected.getName()),
                 ButtonType.YES, ButtonType.NO);
+        vn.edu.auction.client.ui.UiTheme.apply(confirm.getDialogPane());
+        vn.edu.auction.client.ui.UiMotion.install(confirm);
+        confirm.setHeaderText(null);
+        confirm.setTitle(I18n.get("common.confirm"));
         confirm.showAndWait().filter(b -> b == ButtonType.YES).ifPresent(b -> {
-            showMessage("Đang xóa sản phẩm...");
+            showLocalizedMessage("manage.deleting");
             FxAsync.run(() -> {
                 if (isAdmin) {
                     adminApi.deleteItem(selected.getId());
@@ -453,51 +486,101 @@ public class ItemManagementController {
                 }
                 return Boolean.TRUE;
             }, ok -> {
-                showMessage("Xóa sản phẩm thành công!");
+                showLocalizedMessage("manage.deleted");
                 clearForm();
                 loadItems();
-            }, err -> showMessage(BaseApiClient.describe(err)));
+            }, err -> I18n.track(messageLabel.textProperty(), () -> BaseApiClient.describe(err)));
         });
     }
 
-    /** Tạo phiên đấu giá cho sản phẩm ĐÃ ĐƯỢC DUYỆT. Giờ gửi lên là UTC (server dùng đồng hồ UTC). */
+    /** Tạo phiên đấu giá cho sản phẩm ĐÃ ĐƯỢC DUYỆT. Giờ người bán nhập là giờ Việt Nam, gửi lên server dưới dạng UTC. */
     @FXML
     public void handleCreateAuction() {
         ItemResponse selected = itemTable.getSelectionModel().getSelectedItem();
-        if (selected == null) { showMessage("Hãy chọn một sản phẩm để tạo phiên đấu giá."); return; }
+        if (selected == null) { showLocalizedMessage("manage.pickAuction"); return; }
         if (selected.getStatus() != ItemStatus.ACTIVE) {
-            showMessage("Sản phẩm chưa được quản trị viên phê duyệt (hoặc đã có phiên / đã bán).");
+            showLocalizedMessage("manage.unavailable");
             return;
         }
-        TextInputDialog dialog = new TextInputDialog("10");
-        dialog.setTitle("Tạo phiên đấu giá");
+        // Mặc định bắt đầu ngay (phút hiện tại, giờ Việt Nam) => giữ nguyên thao tác 1 chạm như trước
+        LocalDateTime nowVn = LocalDateTime.now(UiKit.APP_ZONE).truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
+        DateTimePicker startPicker = new DateTimePicker(nowVn, I18n.get("manage.datePrompt"));
+        TextField durationField = new TextField("10");
+        Label startLabel = I18n.caption(new Label(), "manage.startTime");
+        Label hint = I18n.caption(new Label(), "manage.startHint");
+        hint.setWrapText(true);
+        Label durationLabel = I18n.caption(new Label(), "manage.duration");
+        Label error = new Label();
+        error.setWrapText(true);
+        error.setStyle("-fx-text-fill: -bidora-danger;");
+        error.setManaged(false);
+        error.setVisible(false);
+        VBox form = new VBox(6, startLabel, startPicker, hint, durationLabel, durationField, error);
+        form.setPrefWidth(420);
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        I18n.localize(dialog.titleProperty(), "manage.createAuction");
         dialog.setHeaderText(selected.getName());
-        dialog.setContentText("Thời lượng phiên (phút):");
-        dialog.showAndWait().ifPresent(text -> {
-            long minutes;
-            try {
-                minutes = Long.parseLong(text.trim());
-            } catch (NumberFormatException e) {
-                showMessage("Thời lượng phải là số nguyên (phút).");
+        dialog.getDialogPane().setContent(form);
+        ButtonType confirm = new ButtonType(I18n.get("common.confirm"), ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancel = new ButtonType(I18n.get("common.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(confirm, cancel);
+        vn.edu.auction.client.ui.UiTheme.apply(dialog.getDialogPane());
+        vn.edu.auction.client.ui.UiMotion.install(dialog);
+
+        // Kiểm tra ngay trong hộp thoại: sai thì báo lỗi và giữ hộp thoại mở, không mất dữ liệu đã nhập
+        final LocalDateTime[] startUtc = new LocalDateTime[1];
+        final long[] minutesResult = new long[1];
+        Button confirmButton = (Button) dialog.getDialogPane().lookupButton(confirm);
+        confirmButton.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            String problem = null;
+            LocalDateTime startVn = startPicker.value();
+            long minutes = 0;
+            if (startVn == null) {
+                problem = I18n.get("manage.startRequired");
+            } else if (startVn.isBefore(LocalDateTime.now(UiKit.APP_ZONE).truncatedTo(java.time.temporal.ChronoUnit.MINUTES))) {
+                problem = I18n.get("manage.startPast");
+            } else {
+                try {
+                    minutes = Long.parseLong(durationField.getText().trim());
+                    if (minutes <= 0 || minutes > 60 * 24 * 30) problem = I18n.get("manage.durationRange");
+                } catch (NumberFormatException e) {
+                    problem = I18n.get("manage.wholeMinutes");
+                }
+            }
+            if (problem != null) {
+                error.setText(problem);
+                error.setManaged(true);
+                error.setVisible(true);
+                ev.consume();
                 return;
             }
-            if (minutes <= 0 || minutes > 60 * 24 * 30) { showMessage("Thời lượng phải từ 1 phút đến 30 ngày."); return; }
-            LocalDateTime start = LocalDateTime.now(ZoneOffset.UTC);
-            AuctionRequest request = new AuctionRequest(selected.getId(), start, start.plusMinutes(minutes));
+            startUtc[0] = UiKit.toUtc(startVn); // server dùng đồng hồ UTC
+            minutesResult[0] = minutes;
+        });
+
+        dialog.showAndWait().filter(button -> button == confirm).ifPresent(button -> {
+            // Thời lượng chỉ tính từ lúc phiên thực sự bắt đầu: endTime = startTime + thời lượng
+            AuctionRequest request = new AuctionRequest(selected.getId(), startUtc[0], startUtc[0].plusMinutes(minutesResult[0]));
             FxAsync.run(() -> auctionApi.createAuction(request), created -> {
-                showMessage("Đã tạo phiên đấu giá #" + created.getId() + ". Người theo dõi bạn sẽ nhận thông báo.");
+                showLocalizedMessage("manage.created", created.getId().toString());
                 loadItems();
-            }, err -> showMessage(BaseApiClient.describe(err)));
+            }, err -> I18n.track(messageLabel.textProperty(), () -> BaseApiClient.describe(err)));
         });
     }
 
     @FXML
     public void clearForm() {
+        showImage("");
         nameField.clear();
         descriptionArea.clear();
         startingPriceField.clear();
         if (feedbackArea != null) feedbackArea.clear();
         itemTable.getSelectionModel().clearSelection();
+    }
+
+    private void showLocalizedMessage(String key, Object... args) {
+        I18n.localize(messageLabel.textProperty(), key, args);
     }
 
     public void showMessage(String message) {
@@ -507,16 +590,18 @@ public class ItemManagementController {
     /** Kiểm tra cơ bản ở giao diện; server vẫn kiểm tra lại. */
     private ItemRequest readForm() {
         String name = nameField.getText().trim();
-        if (name.isEmpty()) { showMessage("Tên sản phẩm không được để trống!"); return null; }
+        if (name.isEmpty()) { showLocalizedMessage("manage.nameRequired"); return null; }
         BigDecimal price;
         try {
             price = new BigDecimal(startingPriceField.getText().trim());
         } catch (NumberFormatException e) {
-            showMessage("Giá khởi điểm phải là một số hợp lệ!");
+            showLocalizedMessage("manage.validPrice");
             return null;
         }
-        if (price.signum() <= 0) { showMessage("Giá khởi điểm phải lớn hơn 0!"); return null; }
-        return new ItemRequest(name, descriptionArea.getText().trim(), price);
+        if (price.signum() <= 0) { showLocalizedMessage("manage.positivePrice"); return null; }
+        ItemRequest request = new ItemRequest(name, descriptionArea.getText().trim(), price);
+        request.setImage(selectedImage);
+        return request;
     }
 
     @FXML

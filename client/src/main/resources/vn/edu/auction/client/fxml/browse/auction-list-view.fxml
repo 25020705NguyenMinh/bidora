@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import vn.edu.auction.client.I18n?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <VBox xmlns:fx="http://javafx.com/fxml/1" fx:controller="vn.edu.auction.client.browse.AuctionListController"
       spacing="12" styleClass="catalog-view" stylesheets="@../../css/catalog.css">
     <HBox fx:id="tools" spacing="10" alignment="CENTER_LEFT">
-        <TextField fx:id="searchField" id="auctionSearch" promptText="Tìm theo tên sản phẩm" accessibleText="Tìm theo tên sản phẩm"
+        <TextField fx:id="searchField" id="auctionSearch" I18n.prompt="browse.search" I18n.accessible="browse.search"
                    minWidth="0" HBox.hgrow="ALWAYS" styleClass="catalog-search"/>
-        <Button fx:id="refreshButton" text="Làm mới" onAction="#loadAuctions" minWidth="-Infinity" styleClass="quiet-button"/>
+        <Button fx:id="refreshButton" I18n.caption="common.refresh" onAction="#loadAuctions" minWidth="-Infinity" styleClass="quiet-button"/>
+    </HBox>
+    <HBox fx:id="statusTabs" spacing="8" alignment="CENTER_LEFT">
+        <Button fx:id="tabLive" I18n.caption="auction.tab.live" onAction="#showLive" styleClass="primary-button"/>
+        <Button fx:id="tabUpcoming" I18n.caption="auction.tab.upcoming" onAction="#showUpcoming" styleClass="outline-button"/>
+        <Button fx:id="tabEnded" I18n.caption="auction.tab.ended" onAction="#showEnded" styleClass="outline-button"/>
     </HBox>
     <Label fx:id="messageLabel" wrapText="true" styleClass="catalog-message"/>
     <ScrollPane fx:id="catalogScroll" fitToWidth="true" hbarPolicy="NEVER" styleClass="catalog-scroll" VBox.vgrow="ALWAYS">

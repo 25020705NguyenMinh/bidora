@@ -27,12 +27,14 @@ public class SocialService {
     private final AuctionRepository auctions;
     private final ItemRepository items;
     private final UserRepository users;
+    private final TradingProfileRepository profiles;
     private final UserSocketHandler socket;
     private final Clock clock;
 
     public SocialService(NotificationRepository notifications, AuctionWatchRepository watches,
                          UserFollowRepository follows, ChatMessageRepository chats, AuctionRepository auctions,
-                         ItemRepository items, UserRepository users, UserSocketHandler socket, Clock auctionClock) {
+                         ItemRepository items, UserRepository users, UserSocketHandler socket, Clock auctionClock,
+                         TradingProfileRepository profiles) {
         this.notifications = notifications;
         this.watches = watches;
         this.follows = follows;
@@ -40,6 +42,7 @@ public class SocialService {
         this.auctions = auctions;
         this.items = items;
         this.users = users;
+        this.profiles = profiles;
         this.socket = socket;
         this.clock = auctionClock;
     }
@@ -84,7 +87,8 @@ public class SocialService {
 
     /** Seller đưa sản phẩm mới lên đấu giá => báo cho những người đang follow seller. */
     public void onNewAuction(AuctionEntity a, ItemEntity item) {
-        String seller = users.findById(item.getSellerId()).map(UserEntity::getFullName).orElse("Người bán");
+        String seller = profiles.sellerName(item.getSellerId())
+                .orElseGet(() -> users.findById(item.getSellerId()).map(UserEntity::getFullName).orElse("Người bán"));
         follows.findBySellerId(item.getSellerId()).forEach(f -> notify(f.followerId, "NEW_ITEM",
                 seller + " vừa đưa lên đấu giá: \"" + item.getName() + "\"", a.getId()));
     }
@@ -158,9 +162,7 @@ public class SocialService {
     // ================= CHAT =================
     @Transactional(readOnly = true)
     public List<UserBriefResponse> directory(Long uid) {
-        return users.findAll().stream()
-                .filter(u -> u.getStatus() == UserStatus.ACTIVE && !u.getId().equals(uid))
-                .map(u -> new UserBriefResponse(u.getId(), u.getFullName(), u.getRole())).toList();
+        return users.directory(uid);
     }
 
     @Transactional(readOnly = true)

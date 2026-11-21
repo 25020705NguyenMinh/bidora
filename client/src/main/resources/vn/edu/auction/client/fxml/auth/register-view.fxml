@@ -1,4 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
+<?import vn.edu.auction.client.I18n?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import vn.edu.auction.client.auth.AuthLayout?>
@@ -12,41 +13,36 @@
                 <ComboBox fx:id="languageComboBox" styleClass="language-combo" />
             </HBox>
             <VBox spacing="4" styleClass="auth-heading">
-                <Label text="%register.title" wrapText="true" styleClass="auth-heading-title" />
+                <Label I18n.caption="register.title" wrapText="true" styleClass="auth-heading-title" />
             </VBox>
             <VBox spacing="5">
-                <Label text="%email.label" styleClass="field-label" />
+                <Label I18n.caption="email.label" styleClass="field-label" />
                 <TextField fx:id="emailField" editable="false" focusTraversable="false" styleClass="input-field, readonly-field" />
             </VBox>
             <HBox spacing="12">
                 <VBox spacing="5" HBox.hgrow="ALWAYS">
-                    <Label text="%register.firstName" styleClass="field-label" />
-                    <TextField fx:id="firstNameField" promptText="%register.firstName" styleClass="input-field" />
+                    <Label I18n.caption="register.firstName" styleClass="field-label" />
+                    <TextField fx:id="firstNameField" I18n.prompt="register.firstName" styleClass="input-field" />
                     <Label fx:id="firstNameError" managed="false" visible="false" wrapText="true" styleClass="field-error" />
                 </VBox>
                 <VBox spacing="5" HBox.hgrow="ALWAYS">
-                    <Label text="%register.lastName" styleClass="field-label" />
-                    <TextField fx:id="lastNameField" promptText="%register.lastName" styleClass="input-field" />
+                    <Label I18n.caption="register.lastName" styleClass="field-label" />
+                    <TextField fx:id="lastNameField" I18n.prompt="register.lastName" styleClass="input-field" />
                     <Label fx:id="lastNameError" managed="false" visible="false" wrapText="true" styleClass="field-error" />
                 </VBox>
             </HBox>
             <VBox spacing="5">
-                <Label text="%register.role" styleClass="field-label" />
-                <ComboBox fx:id="roleComboBox" maxWidth="Infinity" styleClass="input-field" />
-                <Label text="%register.role.note" wrapText="true" styleClass="auth-heading-copy" />
-            </VBox>
-            <VBox spacing="5">
-                <Label text="%password.label" styleClass="field-label" />
+                <Label I18n.caption="password.label" styleClass="field-label" />
                 <HBox fx:id="passwordContainer" alignment="CENTER" styleClass="password-container">
-                    <PasswordField fx:id="passwordField" onAction="#handleRegister" promptText="%register.password.prompt" styleClass="password-input" HBox.hgrow="ALWAYS" />
-                    <TextField fx:id="passwordVisibleField" managed="false" visible="false" onAction="#handleRegister" promptText="%register.password.prompt" styleClass="password-input" HBox.hgrow="ALWAYS" />
+                    <PasswordField fx:id="passwordField" onAction="#handleRegister" I18n.prompt="register.password.prompt" styleClass="password-input" HBox.hgrow="ALWAYS" />
+                    <TextField fx:id="passwordVisibleField" managed="false" visible="false" onAction="#handleRegister" I18n.prompt="register.password.prompt" styleClass="password-input" HBox.hgrow="ALWAYS" />
                     <Button fx:id="togglePasswordButton" onAction="#togglePasswordVisibility" styleClass="eye-button" />
                 </HBox>
                 <Label fx:id="passwordError" managed="false" visible="false" wrapText="true" styleClass="field-error" />
             </VBox>
             <Label fx:id="messageLabel" wrapText="true" styleClass="message-label" />
-            <Button fx:id="registerButton" defaultButton="true" maxWidth="Infinity" onAction="#handleRegister" text="%register.button" styleClass="primary-button" />
-            <Hyperlink text="%common.back" onAction="#openSignupMethodView" styleClass="auth-link" />
+            <Button fx:id="registerButton" defaultButton="true" maxWidth="Infinity" onAction="#handleRegister" I18n.caption="register.button" styleClass="primary-button" />
+            <Hyperlink I18n.caption="common.back" onAction="#openSignupMethodView" styleClass="auth-link" />
         </VBox>
     </form>
 </AuthLayout>

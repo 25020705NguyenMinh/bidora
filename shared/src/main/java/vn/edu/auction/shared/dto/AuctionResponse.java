@@ -6,9 +6,16 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class AuctionResponse {
+    private String image;
+    public String getImage() { return image; }
+    public void setImage(String image) { this.image = image; }
+
 
     private Long id;
     private Long itemId;
+    private Long sellerId;
+    public Long getSellerId() { return sellerId; }
+    public void setSellerId(Long sellerId) { this.sellerId = sellerId; }
     private String itemName;
     private BigDecimal startingPrice;
     private BigDecimal currentPrice;

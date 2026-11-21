@@ -10,8 +10,11 @@ public class Seller extends User {
     }
 
     public Seller() {
-        super();
-        setRole(UserRole.SELLER);
+        super(null, null, null, UserRole.SELLER, null);
+    }
+
+    @Override public java.util.Set<UserRole> permissions() {
+        return TRADING;
     }
 
 }

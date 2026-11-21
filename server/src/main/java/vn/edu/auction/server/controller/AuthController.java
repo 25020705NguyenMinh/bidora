@@ -15,8 +15,6 @@ import vn.edu.auction.server.repository.UserRepository;
 import vn.edu.auction.server.security.JwtService;
 import vn.edu.auction.server.service.AuthService;
 import vn.edu.auction.shared.dto.*;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/auth")

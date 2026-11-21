@@ -12,10 +12,10 @@ final class AuctionRules {
     }
 
     static BigDecimal money(BigDecimal value) {
-        require(value != null && value.signum() > 0, HttpStatus.BAD_REQUEST, "So tien phai lon hon 0.");
-        require(value.stripTrailingZeros().scale() <= 2, HttpStatus.BAD_REQUEST, "So tien chi duoc co toi da 2 chu so thap phan.");
+        require(value != null && value.signum() > 0, HttpStatus.BAD_REQUEST, "Số tiền phải lớn hơn 0.");
+        require(value.stripTrailingZeros().scale() <= 2, HttpStatus.BAD_REQUEST, "Số tiền chỉ được có tối đa 2 chữ số thập phân.");
         require(value.compareTo(new BigDecimal("99999999999999999.99")) <= 0,
-                HttpStatus.BAD_REQUEST, "So tien vuot gioi han luu tru.");
+                HttpStatus.BAD_REQUEST, "Số tiền vượt giới hạn lưu trữ.");
         return value.setScale(2);
     }
 }

@@ -20,7 +20,9 @@ public class ItemController {
     }
 
     @GetMapping("/{id}")
-    public ItemResponse getItemById(@PathVariable("id") Long id) { return items.getItemById(id); }
+    public ItemResponse getItemById(@PathVariable("id") Long id, Authentication auth) {
+        return items.getItemById(id, AuctionPrincipal.userId(auth));
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)

@@ -1,0 +1,46 @@
+name: Bidora CI
+
+on:
+  push:
+    branches: [main, dev, 'feature/**']
+  pull_request:
+    branches: [main, dev, 'feature/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bidora-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Build, JUnit and Checkstyle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Install JavaFX display dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgtk-3-0t64
+      - name: Build and verify
+        run: xvfb-run -a mvn --batch-mode --no-transfer-progress -Pstyle clean verify
+      - name: Save test and style reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bidora-verification-reports
+          path: |
+            **/target/surefire-reports/
+            **/target/checkstyle-result.xml
+          if-no-files-found: ignore
+          retention-days: 7

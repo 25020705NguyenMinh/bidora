@@ -1,5 +1,7 @@
 package vn.edu.auction.client.api;
 
+import vn.edu.auction.client.I18n;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -72,6 +74,7 @@ public abstract class BaseApiClient {
             case 400 -> ApiException.Type.BAD_REQUEST;
             case 401 -> ApiException.Type.UNAUTHORIZED;
             case 403 -> ApiException.Type.FORBIDDEN;
+            case 404 -> ApiException.Type.NOT_FOUND; 
             case 409 -> ApiException.Type.CONFLICT;
             case 429 -> ApiException.Type.RATE_LIMITED;
             default -> status >= 500 ? ApiException.Type.SERVER : ApiException.Type.UNKNOWN;
@@ -90,18 +93,20 @@ public abstract class BaseApiClient {
 
     /** Chuyển lỗi thành câu dễ hiểu để hiện lên label, không bao giờ in stack trace. */
     public static String describe(Throwable t) {
-        if (!(t instanceof ApiException e)) return "Đã xảy ra lỗi không xác định.";
-        if (e.getServerMessage() != null) return e.getServerMessage();
+        if (!(t instanceof ApiException e)) return I18n.get("error.unexpected");
+        // 404: bỏ qua chữ thô của server (vd. "Not Found") và báo câu dễ hiểu
+        if (e.getType() == ApiException.Type.NOT_FOUND) return I18n.get("error.notFound");
+        if (I18n.isVietnamese() && e.getServerMessage() != null) return e.getServerMessage();
         return switch (e.getType()) {
-            case NETWORK -> "Không kết nối được máy chủ. Hãy kiểm tra server đã chạy chưa.";
-            case TIMEOUT -> "Máy chủ phản hồi quá lâu, vui lòng thử lại.";
-            case UNAUTHORIZED -> "Phiên đăng nhập hết hạn hoặc chưa đăng nhập, vui lòng đăng nhập lại.";
-            case FORBIDDEN -> "Bạn không có quyền thực hiện thao tác này.";
-            case BAD_REQUEST -> "Dữ liệu gửi lên không hợp lệ.";
-            case CONFLICT -> "Thao tác xung đột với dữ liệu hiện tại.";
-            case RATE_LIMITED -> "Bạn thao tác quá nhanh, vui lòng thử lại sau.";
-            case SERVER -> "Máy chủ đang gặp lỗi, vui lòng thử lại sau.";
-            default -> "Đã xảy ra lỗi, vui lòng thử lại.";
+            case NETWORK -> I18n.get("error.offline");
+            case TIMEOUT -> I18n.get("error.slow");
+            case UNAUTHORIZED -> I18n.get("error.session");
+            case FORBIDDEN -> I18n.get("error.denied");
+            case BAD_REQUEST -> I18n.get("error.data");
+            case CONFLICT -> I18n.get("error.conflict");
+            case RATE_LIMITED -> I18n.get("error.throttle");
+            case SERVER -> I18n.get("error.service");
+            default -> I18n.get("error.retry");
         };
     }
 

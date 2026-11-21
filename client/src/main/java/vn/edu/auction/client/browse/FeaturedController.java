@@ -1,5 +1,7 @@
 package vn.edu.auction.client.browse;
 
+import vn.edu.auction.client.I18n;
+
 import java.util.List;
 import java.util.Objects;
 import javafx.animation.*;
@@ -22,7 +24,6 @@ import javafx.stage.Stage;
 import javafx.stage.Modality;
 import javafx.stage.Screen;
 import javafx.util.Duration;
-import vn.edu.auction.client.model.SessionData;
 import vn.edu.auction.client.ui.MarketCard;
 import vn.edu.auction.client.ui.UiKit;
 import vn.edu.auction.client.ui.UiMotion;
@@ -31,20 +32,21 @@ import vn.edu.auction.shared.enums.AuctionStatus;
 
 public final class FeaturedController {
     private record Slide(String name, int photo, AuctionResponse auction) {
+        String title() { return auction == null ? I18n.get(name) : name; }
         Long id() { return auction == null ? null : auction.getId(); }
     }
     private static final String[] ART = {"photo-camera", "photo-watch", "photo-headphones", "photo-chair"};
     private static final String[] FILES = {"camera", "watch", "headphones", "chair"};
     private static final List<Slide> GALLERY = List.of(
-            new Slide("Máy ảnh & ống kính", 0, null), new Slide("Đồng hồ dây da", 1, null),
-            new Slide("Tai nghe chụp tai", 2, null), new Slide("Ghế cao bằng gỗ", 3, null));
+            new Slide("gallery.camera", 0, null), new Slide("gallery.watch", 1, null),
+            new Slide("gallery.audio", 2, null), new Slide("gallery.chair", 3, null));
     private static final PseudoClass CURRENT = PseudoClass.getPseudoClass("current");
     private static final Duration DWELL = Duration.seconds(7);
     @FXML private GridPane hero;
     @FXML private VBox copy;
     @FXML private HBox thumbnails;
     @FXML private Label context, title, price, description, position, imageCredit;
-    @FXML private Button previous, next, playback, action;
+    @FXML private Button previous, next, playback, action, expand;
     @FXML private StackPane imageFrame, imageLayers;
     @FXML private ProgressBar dwellProgress;
     private final Timeline dwell = new Timeline();
@@ -62,17 +64,39 @@ public final class FeaturedController {
     private Runnable openCatalog;
 
     @FXML private void initialize() {
+        javafx.animation.TranslateTransition depth = new javafx.animation.TranslateTransition(Duration.millis(220), imageLayers);
+        depth.setInterpolator(Interpolator.EASE_OUT);
+        hero.setOnMouseMoved(event -> {
+            double ratio = event.getX() / Math.max(1, hero.getWidth()) - .5;
+            depth.stop();
+            depth.setToX(ratio * 8);
+            depth.setToY((event.getY() / Math.max(1, hero.getHeight()) - .5) * 5);
+            depth.playFromStart();
+        });
+        hero.setOnMouseExited(event -> {
+            depth.stop();
+            depth.setToX(0);
+            depth.setToY(0);
+            depth.playFromStart();
+        });
+        imageLayers.setScaleX(1.025);
+        imageLayers.setScaleY(1.025);
         dwell.getKeyFrames().setAll(new KeyFrame(Duration.ZERO, new KeyValue(dwellProgress.progressProperty(), 0)),
                 new KeyFrame(DWELL, new KeyValue(dwellProgress.progressProperty(), 1, Interpolator.LINEAR)));
         dwell.setOnFinished(e -> move(1));
-        setup(previous, "Ảnh trước", "M15 4 L8 11 L15 18");
-        setup(next, "Ảnh tiếp theo", "M8 4 L15 11 L8 18");
+        setup(previous, "gallery.previous", "M15 4 L8 11 L15 18");
+        setup(next, "gallery.next", "M8 4 L15 11 L8 18");
+        setup(expand, "gallery.fullPhoto", "M4 10 V4 H10 M14 4 H20 V10 M20 14 V20 H14 M10 20 H4 V14");
         updatePlaybackButton();
         action.setGraphic(UiKit.icon("M3 10 H18 M12 4 L18 10 L12 16"));
         Rectangle clip = new Rectangle();
         clip.widthProperty().bind(imageLayers.widthProperty());
         clip.heightProperty().bind(imageLayers.heightProperty());
         imageLayers.setClip(clip);
+        Rectangle frameClip = new Rectangle();
+        frameClip.widthProperty().bind(imageFrame.widthProperty());
+        frameClip.heightProperty().bind(imageFrame.heightProperty());
+        imageFrame.setClip(frameClip);
         imageFrame.setOnMousePressed(e -> dragStart = e.getSceneX());
         imageFrame.setOnMouseReleased(e -> {
             double distance = e.getSceneX() - dragStart;
@@ -95,7 +119,7 @@ public final class FeaturedController {
             }
             observeWindow(before == null ? null : before.getWindow(), after == null ? null : after.getWindow());
         });
-        for (Node control : List.of(action, previous, next, thumbnails)) {
+        for (Node control : List.of(action, previous, next, expand, thumbnails)) {
             control.hoverProperty().addListener(visibilityChanged);
         }
     }
@@ -107,6 +131,14 @@ public final class FeaturedController {
         scroll.vvalueProperty().addListener(visibilityChanged);
         scroll.viewportBoundsProperty().addListener(visibilityChanged);
         catalog.auctions().addListener((ListChangeListener<AuctionResponse>) change -> refresh());
+        I18n.onChange(hero, () -> {
+            for (int i = 0; i < thumbnails.getChildren().size(); i++) {
+                Button thumb = (Button) thumbnails.getChildren().get(i);
+                thumb.setAccessibleText(slides.get(i).title());
+                thumb.getTooltip().setText(slides.get(i).title());
+            }
+            updateCopy();
+        });
         refresh();
     }
 
@@ -140,8 +172,8 @@ public final class FeaturedController {
             button.getStyleClass().add("featured-thumb");
             if (slide.photo() >= 0) button.getStyleClass().add(ART[slide.photo()]);
             else button.setText(Integer.toString(i + 1));
-            button.setAccessibleText(slide.name());
-            button.setTooltip(UiKit.tooltip(slide.name()));
+            button.setAccessibleText(slide.title());
+            button.setTooltip(UiKit.tooltip(slide.title()));
             button.setOnAction(e -> move(destination - index));
             thumbnails.getChildren().add(button);
         }
@@ -162,16 +194,23 @@ public final class FeaturedController {
     @FXML private void openCurrent() {
         Slide slide = slides.get(index);
         if (slide.auction() != null) catalog.openFeatured(slide.auction());
-        else if (SessionData.getInstance().isLoggedIn()) openCatalog.run();
-        else showPhoto(slide);
+        else openCatalog.run();
+    }
+
+    @FXML private void expandPhoto() {
+        Slide slide = slides.get(index);
+        if (slide.photo() >= 0 || (slide.auction() != null && slide.auction().getImage() != null)) showPhoto(slide);
     }
 
     private void showPhoto(Slide slide) {
         Window owner = hero.getScene().getWindow();
         var screen = Screen.getScreensForRectangle(owner.getX(), owner.getY(), owner.getWidth(), owner.getHeight())
                 .stream().findFirst().orElse(Screen.getPrimary()).getVisualBounds();
-        var url = getClass().getResource("/vn/edu/auction/client/icons/placeholder-" + FILES[slide.photo()] + ".jpg");
-        ImageView photo = new ImageView(new Image(url.toExternalForm()));
+        var url = getClass().getResource("/vn/edu/auction/client/icons/placeholder-" + FILES[Math.max(0, slide.photo())] + ".jpg");
+        Image actual = slide.auction() != null && slide.auction().getImage() != null && !slide.auction().getImage().isBlank()
+                ? new Image(new java.io.ByteArrayInputStream(java.util.Base64.getDecoder().decode(slide.auction().getImage())))
+                : new Image(url.toExternalForm());
+        ImageView photo = new ImageView(actual);
         photo.setPreserveRatio(true);
         StackPane canvas = new StackPane(photo);
         photo.fitWidthProperty().bind(canvas.widthProperty());
@@ -179,16 +218,16 @@ public final class FeaturedController {
         canvas.setMinSize(0, 0);
         canvas.setPrefSize(Math.min(960, screen.getWidth() * .85), Math.min(640, screen.getHeight() * .72));
         canvas.setStyle("-fx-background-color: #14171c;");
-        Button close = new Button("Đóng");
+        Button close = I18n.caption(new Button(), "common.close");
         close.getStyleClass().add("featured-control");
-        close.setAccessibleText("Đóng ảnh");
+        I18n.localize(close.accessibleTextProperty(), "gallery.close");
         StackPane.setAlignment(close, javafx.geometry.Pos.TOP_RIGHT);
         StackPane.setMargin(close, new javafx.geometry.Insets(12));
         canvas.getChildren().add(close);
         Stage viewer = new Stage();
         viewer.initOwner(owner);
         viewer.initModality(Modality.WINDOW_MODAL);
-        viewer.setTitle(slide.name() + " · Ảnh minh họa");
+        viewer.setTitle(slide.title());
         Scene scene = new Scene(canvas);
         vn.edu.auction.client.ui.UiTheme.apply(scene);
         viewer.setScene(scene);
@@ -200,19 +239,22 @@ public final class FeaturedController {
     private void updateCopy() {
         Slide slide = slides.get(index);
         AuctionResponse a = slide.auction();
-        context.setText(a == null ? "Bộ ảnh chọn lọc" : (a.getStatus() == AuctionStatus.RUNNING ? "Đang đấu giá" : "Sắp mở phiên"));
-        title.setText(slide.name());
-        title.setTooltip(UiKit.tooltip(slide.name()));
+        context.setText(a == null ? I18n.get("gallery.collection") : (a.getStatus() == AuctionStatus.RUNNING ? I18n.get("gallery.live") : I18n.get("gallery.scheduled")));
+        title.setText(slide.title());
+        title.setTooltip(UiKit.tooltip(slide.title()));
         price.setText(a == null ? "" : UiKit.money(a.getCurrentPrice()));
-        description.setText(a == null ? "" : "Kết thúc " + UiKit.dt(a.getEndTime()));
+        description.setText(a == null ? "" : I18n.get("auction.endsPrefix", UiKit.dt(a.getEndTime())));
         for (Label label : List.of(price, description)) {
             label.setVisible(!label.getText().isEmpty());
             label.setManaged(label.isVisible());
         }
-        action.setText(a != null ? "Xem phiên đấu giá" : SessionData.getInstance().isLoggedIn()
-                ? "Xem danh sách phiên" : "Xem trọn ảnh");
+        I18n.localize(action.textProperty(), a != null ? "gallery.open" : "gallery.browse");
         position.setText((index + 1) + " / " + slides.size());
-        imageCredit.setVisible(slide.photo() >= 0);
+        boolean hasPhoto = slide.photo() >= 0 || (a != null && a.getImage() != null && !a.getImage().isBlank());
+        expand.setVisible(hasPhoto);
+        expand.setManaged(hasPhoto);
+        imageCredit.setVisible(a != null && hasPhoto && (a.getImage() == null || a.getImage().isBlank()));
+        imageCredit.setManaged(imageCredit.isVisible());
         for (int i = 0; i < thumbnails.getChildren().size(); i++)
             thumbnails.getChildren().get(i).pseudoClassStateChanged(CURRENT, i == index);
     }
@@ -224,10 +266,13 @@ public final class FeaturedController {
         Node old = layers.isEmpty() ? null : layers.getLast();
         StackPane art = new StackPane();
         int photo = slides.get(index).photo();
-        if (photo >= 0) art.getStyleClass().addAll("featured-art", ART[photo]);
+        var featured = slides.get(index).auction();
+        if (featured != null && featured.getImage() != null && !featured.getImage().isBlank()) {
+            art.getChildren().add(vn.edu.auction.client.ui.ProductPhoto.view(featured.getImage(), featured.getItemName(), 400));
+        } else if (photo >= 0) art.getStyleClass().addAll("featured-art", ART[photo]);
         else {
             art.getStyleClass().add("featured-missing");
-            art.getChildren().add(new Label("Chưa có ảnh sản phẩm"));
+            art.getChildren().add(I18n.caption(new Label(), "gallery.noPhoto"));
         }
         if (old == null || direction == 0) layers.setAll(art);
         else {
@@ -258,14 +303,14 @@ public final class FeaturedController {
     }
 
     private void updatePlaybackButton() {
-        setup(playback, paused ? "Tiếp tục tự chuyển ảnh" : "Tạm dừng tự chuyển ảnh",
+        setup(playback, paused ? "gallery.play" : "gallery.pause",
                 paused ? "M7 4 L18 11 L7 18 Z" : "M8 4 V18 M15 4 V18");
     }
 
-    private static void setup(Button button, String text, String path) {
+    private static void setup(Button button, String key, String path) {
         button.setGraphic(UiKit.icon(path));
-        button.setTooltip(UiKit.tooltip(text));
-        button.setAccessibleText(text);
+        button.setTooltip(UiKit.localizedTooltip(key));
+        I18n.localize(button.accessibleTextProperty(), key);
     }
 
     private void observeWindow(Window before, Window after) {
@@ -289,7 +334,7 @@ public final class FeaturedController {
                 || (window instanceof Stage stage && stage.isIconified())
                 || Window.getWindows().stream().anyMatch(w -> w instanceof Stage child
                         && child.getOwner() == window && child.getModality() != Modality.NONE)
-                || slides.size() < 2 || action.isHover() || previous.isHover() || next.isHover() || thumbnails.isHover()) {
+                || slides.size() < 2 || expand.isHover() || action.isHover() || previous.isHover() || next.isHover() || thumbnails.isHover()) {
             dwell.pause();
             return;
         }
