@@ -13,6 +13,8 @@ import vn.edu.auction.shared.enums.*;
 @Service
 @Transactional(readOnly = true)
 public class AuctionService {
+    private static final long START_GRACE_SECONDS = 120;
+
     private final AuctionRepository auctions;
     private final ItemRepository items;
     private final AuctionUserService users;
@@ -51,6 +53,9 @@ public class AuctionService {
                 "Sản phẩm chưa được quản trị viên phê duyệt.");
         AuctionRules.require(!auctions.existsByItemId(item.getId()), HttpStatus.CONFLICT, "Sản phẩm đã có phiên đấu giá.");
         LocalDateTime now = LocalDateTime.now(clock);
+        // Giờ client gửi lên là UTC. Cho lệch tối đa 120s (ô chọn giờ chỉ chính xác tới phút, cộng độ trễ mạng).
+        AuctionRules.require(!request.getStartTime().isBefore(now.minusSeconds(START_GRACE_SECONDS)),
+                HttpStatus.BAD_REQUEST, "Thời gian bắt đầu không được ở trong quá khứ.");
         AuctionRules.require(request.getEndTime().isAfter(now) && request.getEndTime().isAfter(request.getStartTime()),
                 HttpStatus.BAD_REQUEST, "Thời gian kết thúc không hợp lệ.");
         AuctionEntity auction = new AuctionEntity();
@@ -58,6 +63,7 @@ public class AuctionService {
         auction.setCurrentPrice(item.getStartingPrice());
         auction.setStartTime(request.getStartTime());
         auction.setEndTime(request.getEndTime());
+        // OPEN = sắp diễn ra (scheduler sẽ chuyển RUNNING đúng giờ); startTime <= now => bắt đầu ngay
         auction.setStatus(request.getStartTime().isAfter(now) ? AuctionStatus.OPEN : AuctionStatus.RUNNING);
         AuctionEntity saved = auctions.save(auction);
         social.onNewAuction(saved, item); // báo cho người đang follow người bán

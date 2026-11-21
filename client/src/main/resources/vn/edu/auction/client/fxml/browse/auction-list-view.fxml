@@ -9,6 +9,11 @@
                    minWidth="0" HBox.hgrow="ALWAYS" styleClass="catalog-search"/>
         <Button fx:id="refreshButton" I18n.caption="common.refresh" onAction="#loadAuctions" minWidth="-Infinity" styleClass="quiet-button"/>
     </HBox>
+    <HBox fx:id="statusTabs" spacing="8" alignment="CENTER_LEFT">
+        <Button fx:id="tabLive" I18n.caption="auction.tab.live" onAction="#showLive" styleClass="primary-button"/>
+        <Button fx:id="tabUpcoming" I18n.caption="auction.tab.upcoming" onAction="#showUpcoming" styleClass="outline-button"/>
+        <Button fx:id="tabEnded" I18n.caption="auction.tab.ended" onAction="#showEnded" styleClass="outline-button"/>
+    </HBox>
     <Label fx:id="messageLabel" wrapText="true" styleClass="catalog-message"/>
     <ScrollPane fx:id="catalogScroll" fitToWidth="true" hbarPolicy="NEVER" styleClass="catalog-scroll" VBox.vgrow="ALWAYS">
         <content><TilePane fx:id="grid" id="auctionGrid" hgap="16" vgap="16" prefTileWidth="245" tileAlignment="TOP_LEFT"/></content>

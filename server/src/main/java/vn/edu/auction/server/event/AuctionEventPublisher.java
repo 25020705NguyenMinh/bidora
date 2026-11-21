@@ -67,6 +67,12 @@ public class AuctionEventPublisher extends TextWebSocketHandler {
         afterCommit(() -> broadcast(ev));
     }
 
+    /** Phiên lên lịch vừa tới giờ và chuyển sang RUNNING. */
+    public void publishAuctionStarted(AuctionEntity auction) {
+        AuctionEvent ev = AuctionEvent.from(AuctionEvent.AUCTION_STARTED, auction);
+        afterCommit(() -> broadcast(ev));
+    }
+
     private void afterCommit(Runnable action) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

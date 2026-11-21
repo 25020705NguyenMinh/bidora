@@ -63,9 +63,17 @@ public final class UiKit {
         return format.format(v);
     }
 
-    /** Server lưu giờ UTC => đổi sang giờ máy người dùng trước khi hiển thị. */
+    /** Múi giờ của Bidora: mọi giờ hiển thị / nhập đều là giờ Việt Nam, bất kể múi giờ của máy. */
+    public static final ZoneId APP_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+
+    /** Server lưu giờ UTC => đổi sang giờ Việt Nam trước khi hiển thị. */
     public static LocalDateTime toLocal(LocalDateTime utc) {
-        return utc == null ? null : utc.atOffset(ZoneOffset.UTC).atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
+        return utc == null ? null : utc.atOffset(ZoneOffset.UTC).atZoneSameInstant(APP_ZONE).toLocalDateTime();
+    }
+
+    /** Giờ Việt Nam người dùng nhập => UTC để gửi lên server. */
+    public static LocalDateTime toUtc(LocalDateTime vietnam) {
+        return vietnam == null ? null : vietnam.atZone(APP_ZONE).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
     }
 
     public static String dt(LocalDateTime utc) { return utc == null ? "—" : (I18n.isVietnamese() ? DT : EN_DT).format(toLocal(utc)); }

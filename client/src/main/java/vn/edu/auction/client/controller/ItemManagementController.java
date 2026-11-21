@@ -4,7 +4,6 @@ import vn.edu.auction.client.I18n;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -19,7 +18,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.Dialog;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import vn.edu.auction.client.api.AdminApiClient;
@@ -28,6 +28,7 @@ import vn.edu.auction.client.api.BaseApiClient;
 import vn.edu.auction.client.api.FxAsync;
 import vn.edu.auction.client.api.ItemApiClient;
 import vn.edu.auction.client.model.SessionData;
+import vn.edu.auction.client.ui.DateTimePicker;
 import vn.edu.auction.client.ui.UiKit;
 import vn.edu.auction.shared.dto.AuctionRequest;
 import vn.edu.auction.shared.dto.ItemRequest;
@@ -492,7 +493,7 @@ public class ItemManagementController {
         });
     }
 
-    /** Tạo phiên đấu giá cho sản phẩm ĐÃ ĐƯỢC DUYỆT. Giờ gửi lên là UTC (server dùng đồng hồ UTC). */
+    /** Tạo phiên đấu giá cho sản phẩm ĐÃ ĐƯỢC DUYỆT. Giờ người bán nhập là giờ Việt Nam, gửi lên server dưới dạng UTC. */
     @FXML
     public void handleCreateAuction() {
         ItemResponse selected = itemTable.getSelectionModel().getSelectedItem();
@@ -501,23 +502,66 @@ public class ItemManagementController {
             showLocalizedMessage("manage.unavailable");
             return;
         }
-        TextInputDialog dialog = new TextInputDialog("10");
+        // Mặc định bắt đầu ngay (phút hiện tại, giờ Việt Nam) => giữ nguyên thao tác 1 chạm như trước
+        LocalDateTime nowVn = LocalDateTime.now(UiKit.APP_ZONE).truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
+        DateTimePicker startPicker = new DateTimePicker(nowVn, I18n.get("manage.datePrompt"));
+        TextField durationField = new TextField("10");
+        Label startLabel = I18n.caption(new Label(), "manage.startTime");
+        Label hint = I18n.caption(new Label(), "manage.startHint");
+        hint.setWrapText(true);
+        Label durationLabel = I18n.caption(new Label(), "manage.duration");
+        Label error = new Label();
+        error.setWrapText(true);
+        error.setStyle("-fx-text-fill: -bidora-danger;");
+        error.setManaged(false);
+        error.setVisible(false);
+        VBox form = new VBox(6, startLabel, startPicker, hint, durationLabel, durationField, error);
+        form.setPrefWidth(420);
+
+        Dialog<ButtonType> dialog = new Dialog<>();
         I18n.localize(dialog.titleProperty(), "manage.createAuction");
         dialog.setHeaderText(selected.getName());
-        dialog.setContentText(I18n.get("manage.duration"));
+        dialog.getDialogPane().setContent(form);
+        ButtonType confirm = new ButtonType(I18n.get("common.confirm"), ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancel = new ButtonType(I18n.get("common.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(confirm, cancel);
         vn.edu.auction.client.ui.UiTheme.apply(dialog.getDialogPane());
         vn.edu.auction.client.ui.UiMotion.install(dialog);
-        dialog.showAndWait().ifPresent(text -> {
-            long minutes;
-            try {
-                minutes = Long.parseLong(text.trim());
-            } catch (NumberFormatException e) {
-                showLocalizedMessage("manage.wholeMinutes");
+
+        // Kiểm tra ngay trong hộp thoại: sai thì báo lỗi và giữ hộp thoại mở, không mất dữ liệu đã nhập
+        final LocalDateTime[] startUtc = new LocalDateTime[1];
+        final long[] minutesResult = new long[1];
+        Button confirmButton = (Button) dialog.getDialogPane().lookupButton(confirm);
+        confirmButton.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            String problem = null;
+            LocalDateTime startVn = startPicker.value();
+            long minutes = 0;
+            if (startVn == null) {
+                problem = I18n.get("manage.startRequired");
+            } else if (startVn.isBefore(LocalDateTime.now(UiKit.APP_ZONE).truncatedTo(java.time.temporal.ChronoUnit.MINUTES))) {
+                problem = I18n.get("manage.startPast");
+            } else {
+                try {
+                    minutes = Long.parseLong(durationField.getText().trim());
+                    if (minutes <= 0 || minutes > 60 * 24 * 30) problem = I18n.get("manage.durationRange");
+                } catch (NumberFormatException e) {
+                    problem = I18n.get("manage.wholeMinutes");
+                }
+            }
+            if (problem != null) {
+                error.setText(problem);
+                error.setManaged(true);
+                error.setVisible(true);
+                ev.consume();
                 return;
             }
-            if (minutes <= 0 || minutes > 60 * 24 * 30) { showLocalizedMessage("manage.durationRange"); return; }
-            LocalDateTime start = LocalDateTime.now(ZoneOffset.UTC);
-            AuctionRequest request = new AuctionRequest(selected.getId(), start, start.plusMinutes(minutes));
+            startUtc[0] = UiKit.toUtc(startVn); // server dùng đồng hồ UTC
+            minutesResult[0] = minutes;
+        });
+
+        dialog.showAndWait().filter(button -> button == confirm).ifPresent(button -> {
+            // Thời lượng chỉ tính từ lúc phiên thực sự bắt đầu: endTime = startTime + thời lượng
+            AuctionRequest request = new AuctionRequest(selected.getId(), startUtc[0], startUtc[0].plusMinutes(minutesResult[0]));
             FxAsync.run(() -> auctionApi.createAuction(request), created -> {
                 showLocalizedMessage("manage.created", created.getId().toString());
                 loadItems();

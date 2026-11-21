@@ -51,7 +51,7 @@ class P3BackendTest {
     @EntityScan("vn.edu.auction.server.entity")
     @EnableJpaRepositories("vn.edu.auction.server.repository")
     @Import({ItemService.class, AuctionService.class, BidService.class, AuctionUserService.class,
-            SocialService.class, UserSocketHandler.class, AuctionEventPublisher.class, AuctionClosingService.class,
+            SocialService.class, UserSocketHandler.class, AuctionEventPublisher.class, AuctionClosingService.class, AuctionActivationService.class,
             ItemController.class, AuctionController.class, BidController.class, TradingProfileService.class,
             TradingProfileController.class, AuthService.class, OtpService.class, MailService.class, AuthController.class,
             AuctionApiExceptionHandler.class, GlobalExceptionHandler.class, SecurityConfig.class, JwtService.class})
@@ -115,6 +115,7 @@ class P3BackendTest {
     @Autowired EventCollector collector;
     @Autowired PlatformTransactionManager transactionManager;
     @Autowired AuctionClosingService closing;
+    @Autowired AuctionActivationService activation;
     @Autowired MockMvc mvc;
     @Autowired JwtService jwt;
     @Autowired TestMailbox mailbox;
@@ -274,6 +275,28 @@ class P3BackendTest {
         clock.set(now.plusMinutes(1));
         bid(auction.getId(), bidder, "20");
         assertEquals(AuctionStatus.RUNNING, auctionService.getAuctionById(auction.getId()).getStatus());
+    }
+
+    @Test void schedulerActivatesScheduledAuctionExactlyOnceWhenDue() {
+        ItemResponse item = itemService.createItem(new ItemRequest("Item", "", BigDecimal.TEN), seller);
+        approve(item.getId());
+        AuctionResponse auction = auctionService.createAuction(new AuctionRequest(item.getId(), now.plusMinutes(5), now.plusMinutes(15)), seller);
+        assertEquals(AuctionStatus.OPEN, auction.getStatus());
+        assertEquals(0, activation.activateDueAuctions()); // chưa tới giờ
+        clock.set(now.plusMinutes(5).minusSeconds(1));
+        assertEquals(0, activation.activateDueAuctions());
+        clock.set(now.plusMinutes(5));
+        assertEquals(1, activation.activateDueAuctions()); // đúng giờ
+        assertEquals(AuctionStatus.RUNNING, auctionService.getAuctionById(auction.getId()).getStatus());
+        assertEquals(0, activation.activateDueAuctions()); // idempotent
+        assertEquals(now.plusMinutes(15), auctionService.getAuctionById(auction.getId()).getEndTime());
+    }
+
+    @Test void rejectsStartTimeInThePast() {
+        ItemResponse item = itemService.createItem(new ItemRequest("Item", "", BigDecimal.TEN), seller);
+        approve(item.getId());
+        assertThrows(AuctionBusinessException.class, () -> auctionService.createAuction(
+                new AuctionRequest(item.getId(), now.minusMinutes(5), now.plusMinutes(5)), seller));
     }
 
     @Test void rejectsInactiveBidderAndSelfBidding() {

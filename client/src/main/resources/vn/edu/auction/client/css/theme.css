@@ -1210,3 +1210,40 @@
 .tab:selected .semantic-icon .line-icon {
     -fx-stroke: -bidora-accent;
 }
+
+/* ===== Chọn ngày giờ bắt đầu phiên đấu giá (chỉ dùng token, tự đổi theo sáng/tối) ===== */
+.datetime-picker .date-picker .text-field,
+.datetime-picker .spinner .text-field {
+    -fx-background-color: -bidora-surface-soft;
+    -fx-text-fill: -bidora-text;
+    -fx-prompt-text-fill: -bidora-muted;
+    -fx-background-radius: 6;
+    -fx-border-color: -bidora-border;
+    -fx-border-radius: 6;
+    -fx-padding: 8 10;
+}
+.datetime-picker .spinner .text-field:focused,
+.datetime-picker .date-picker .text-field:focused {
+    -fx-border-color: -bidora-accent;
+}
+.datetime-picker .date-picker > .arrow-button,
+.datetime-picker .spinner > .increment-arrow-button,
+.datetime-picker .spinner > .decrement-arrow-button {
+    -fx-background-color: -bidora-surface-soft;
+}
+.datetime-picker .datetime-separator { -fx-font-weight: bold; -fx-text-fill: -bidora-muted; }
+.date-picker-popup {
+    -fx-background-color: -bidora-surface;
+    -fx-border-color: -bidora-border;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+.date-picker-popup .month-year-pane { -fx-background-color: -bidora-surface-soft; }
+.date-picker-popup .label { -fx-text-fill: -bidora-text; }
+.date-picker-popup .day-cell { -fx-background-color: transparent; -fx-text-fill: -bidora-text; }
+.date-picker-popup .day-cell:hover { -fx-background-color: -bidora-surface-hover; }
+.date-picker-popup .day-cell:selected,
+.date-picker-popup .today:selected { -fx-background-color: -bidora-action; -fx-text-fill: -bidora-on-action; }
+.date-picker-popup .today { -fx-border-color: -bidora-accent; }
+.date-picker-popup .day-cell:disabled { -fx-opacity: 0.35; }
+.date-picker-popup .previous-month, .date-picker-popup .next-month { -fx-text-fill: -bidora-muted; }

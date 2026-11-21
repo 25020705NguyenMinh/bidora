@@ -133,10 +133,11 @@ public final class PreviewServer {
                     send(exchange, 409, java.util.Map.of("message", "Product must be approved."));
                     return;
                 }
+                LocalDateTime previewStart = LocalDateTime.parse(body.path("startTime").asText());
                 AuctionResponse auction = new AuctionResponse((long) auctions.size() + 100, itemId, item.getName(),
-                        item.getStartingPrice(), item.getStartingPrice(), null,
-                        LocalDateTime.parse(body.path("startTime").asText()),
-                        LocalDateTime.parse(body.path("endTime").asText()), AuctionStatus.RUNNING);
+                        item.getStartingPrice(), item.getStartingPrice(), null, previewStart,
+                        LocalDateTime.parse(body.path("endTime").asText()),
+                        previewStart.isAfter(LocalDateTime.now(ZoneOffset.UTC)) ? AuctionStatus.OPEN : AuctionStatus.RUNNING);
                 auction.setImage(item.getImage());
                 auction.setSellerId(item.getSellerId());
                 auctions.add(auction);
