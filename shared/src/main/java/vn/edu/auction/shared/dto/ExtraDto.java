@@ -23,6 +23,7 @@ public final class ExtraDto {
     public record StatusRequest(UserStatus status) {}
     public record AdminAuctionResponse(Long id, String itemName, BigDecimal currentPrice, Long highestBidderId,
                                        LocalDateTime endTime, AuctionStatus status, boolean hidden, long bidCount) {}
+    public record ReviewFeedbackRequest(String feedback) {}
     // Thông báo / theo dõi / chat
     public record NotificationResponse(Long id, String type, String message, Long refId, boolean seen, LocalDateTime createdAt) {}
     public record WatchRequest(boolean watching, boolean muted) {}

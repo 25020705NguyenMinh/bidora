@@ -9,6 +9,7 @@ import vn.edu.auction.shared.enums.AuctionStatus;
 public class AuctionEvent {
     public static final String NEW_BID = "NEW_BID";
     public static final String AUCTION_FINISHED = "AUCTION_FINISHED";
+    public static final String AUCTION_STARTED = "AUCTION_STARTED";
 
     private final String type;
     private final Long auctionId;

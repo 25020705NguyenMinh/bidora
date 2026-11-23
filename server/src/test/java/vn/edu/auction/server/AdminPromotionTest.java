@@ -46,6 +46,7 @@ import vn.edu.auction.shared.enums.UserStatus;
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",  //hibernate sinh câu sql theo cú pháp của H2 thay vì dùng MySQL.
 })
 @AutoConfigureMockMvc
+@org.springframework.test.context.ActiveProfiles("test")
 class AdminPromotionTest {
 
     /** Context tối thiểu: chỉ nạp những bean mà AdminController cần. */

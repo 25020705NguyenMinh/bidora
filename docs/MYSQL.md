@@ -1,4 +1,6 @@
-# Cài MySQL và nối TECH AUCTION
+# Kết nối Bidora với MySQL hoặc TiDB
+
+Nhóm dùng JavaFX → Render → TiDB. Người mở `AppLauncher` để dùng hệ thống chung chỉ cần kết nối Internet. Các bước MySQL local dưới đây dành cho người phát triển backend.
 
 ## Hiểu ba phần trước
 
@@ -26,7 +28,11 @@ Có thể cài thêm Workbench từ <https://dev.mysql.com/downloads/workbench/>
 
 Mở Workbench, tạo kết nối đến `127.0.0.1`, cổng `3306`, user `root`, nhập mật khẩu vừa đặt. Mở SQL tab, thay `TU_DAT_MAT_KHAU_MANH` rồi chạy:
 
-
+```sql
+CREATE DATABASE IF NOT EXISTS auction CHARACTER SET utf8mb4;
+CREATE USER IF NOT EXISTS 'auction_app'@'localhost' IDENTIFIED BY 'TU_DAT_MAT_KHAU_MANH';
+GRANT ALL PRIVILEGES ON auction.* TO 'auction_app'@'localhost';
+```
 
 User app chỉ được thao tác trong database `auction`. Nếu đã tạo `auction_app` từ trước, `CREATE USER IF NOT EXISTS` **không đổi mật khẩu**; muốn đổi hãy dùng `ALTER USER 'auction_app'@'localhost' IDENTIFIED BY 'MAT_KHAU_MOI';`.
 
@@ -39,48 +45,29 @@ Copy-Item config/application-local.example.properties config/application-local.p
 notepad config/application-local.properties
 ```
 
-Sửa đúng hai dòng:
+Điền đúng database local và tài khoản đã tạo:
 
 ```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/auction?serverTimezone=UTC
 spring.datasource.username=auction_app
 spring.datasource.password=MAT_KHAU_BAN_VUA_DAT
 ```
 
 Dùng mật khẩu của **auction_app**, không phải tài khoản đăng nhập app. File này được git bỏ qua. Chạy server tại **thư mục gốc repo** để file được tự đọc.
 
-Hoặc không dùng file, đặt biến môi trường trong chính PowerShell sắp chạy server:
+Cách cấu hình đầy đủ cho database, JWT và SMTP nằm ở mục 7 trong [README](../README.md). Đặt `DB_USERNAME` khi dùng biến môi trường. Script `start-server.ps1` đọc file `.env` cạnh script.
 
-```powershell
-$env:DB_USER = 'auction_app'
-$env:DB_PASSWORD = 'MAT_KHAU_BAN_VUA_DAT'
-```
+### 4. Khởi động, rồi kiểm tra
 
-Chọn một cách cấu hình để tránh nhầm mật khẩu; file local được ưu tiên so với các giá trị DB_* mặc định trong file app.
-
-### 4. Build và mở app
-
-```powershell
-mvn clean install
-java -jar server/target/server-1.0-SNAPSHOT.jar
-```
-
-Hibernate sẽ tạo bảng khi server khởi động; không cần tự viết các bảng. Test trong `mvn clean install` dùng H2 riêng, nên **test xanh chưa chứng minh mật khẩu MySQL đúng**.
-
-Mở PowerShell thứ hai tại repo:
-
-```powershell
-mvn -pl client javafx:run
-```
-
-Sau khi server chạy, trong Workbench kiểm tra:
+Chạy backend bằng script trong README. Ở terminal client, đặt `$env:AUCTION_SERVER_URL = 'http://127.0.0.1:8080'` trước khi mở ứng dụng. Hibernate tạo các bảng trong database đã chọn. Test mặc định dùng H2 trong bộ nhớ.
 
 ```sql
 USE auction;
 SHOW TABLES;
-SELECT id, full_name, email, role, status FROM users;
+SELECT id, full_name, role, status FROM users;
 ```
 
-Database mới trống là bình thường. Đăng ký và xác minh tài khoản trên app; mặc định OTP xuất hiện trong console server. Tạo admin đầu tiên theo README để duyệt sản phẩm.
+Database mới có thể trống. Đăng ký và lấy OTP gửi qua SMTP để xác minh tài khoản.
 
 ## Cả nhóm chạy với nhau
 
@@ -92,27 +79,9 @@ mvn -pl client javafx:run
 
 Thay IP thật; Windows Firewall trên máy server cần cho phép Java/cổng 8080 trong mạng riêng. MySQL vẫn nằm trên máy server, không cần mở cổng 3306 cho các máy client.
 
-## MySQL cloud Railway
+## Database chung trên TiDB Cloud
 
-Chưa tạo hay chuyển dữ liệu lên cloud trong lần tích hợp này. Có thể dùng cấu hình sẵn khi nhóm muốn làm issue #26.
-
-1. Trong Railway project, thêm MySQL service.
-2. Nếu Spring Boot vẫn chạy trên laptop, bật **Public Access/TCP Proxy** trong Settings → Networking. Lấy host và port công khai (port có thể khác 3306).
-3. Xem username, password và database của service. Nếu Spring Boot cũng chạy trong cùng Railway project, dùng địa chỉ private của service.
-4. Xóa/comment cấu hình MySQL local trước khi chuyển sang biến môi trường:
-
-```powershell
-$env:DB_HOST = 'HOST_CONG_KHAI_TU_RAILWAY'
-$env:DB_PORT = 'PORT_CONG_KHAI_TU_RAILWAY'
-$env:DB_NAME = 'TEN_DATABASE_TU_RAILWAY'
-$env:DB_USER = 'USER_TU_RAILWAY'
-$env:DB_PASSWORD = 'MAT_KHAU_TU_RAILWAY'
-java -jar server/target/server-1.0-SNAPSHOT.jar
-```
-
-Nếu dùng `DB_URL`, phải là `jdbc:mysql://HOST:PORT/DATABASE?...`, **không** dán nguyên chuỗi `mysql://user:password@...` vào đó; user/password đặt riêng. Railway cung cấp biến `MYSQLHOST`, `MYSQLPORT`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`; map chúng sang DB_* hoặc SPRING_DATASOURCE_* của app.
-
-Chỉ chuyển MySQL lên cloud thì các laptop vẫn có thể chạy server riêng; chưa phải một backend chung trên Internet. Nhóm nên thống nhất một server API để realtime hoạt động giữa các người dùng. Dữ liệu MySQL cũ cũng không tự chuyển lên dịch vụ mới.
+Người vận hành lấy JDBC URL, tên database và tài khoản kết nối trong cụm TiDB của nhóm. Điền `DB_URL`, `DB_USERNAME` và `DB_PASSWORD` ở mục Environment của web service Render. URL có dạng `jdbc:mysql://HOST:4000/DATABASE?sslMode=VERIFY_IDENTITY`. Dockerfile ở gốc repo đóng gói module server và các phụ thuộc Maven. Các client cùng kết nối tới địa chỉ Render để nhận cập nhật realtime từ cùng backend.
 
 ## Lỗi thường gặp
 
@@ -125,6 +94,6 @@ Chỉ chuyển MySQL lên cloud thì các laptop vẫn có thể chạy server r
 | `Unknown database 'auction'` | Chạy câu `CREATE DATABASE` ở bước 2. |
 | Cổng 8080 đã được dùng | Tắt server cũ hoặc đặt `$env:PORT='8082'` và đổi URL client tương ứng. |
 | Test thành công nhưng server không chạy | Test dùng H2; cần hoàn tất cấu hình MySQL thật. |
-| Không có email OTP | Mặc định đọc mã trong console server; muốn mail thật bật profile `mail` và cấu hình SMTP. |
+| Không có email OTP | Kiểm tra `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD` và log gửi mail của backend. |
 
-Nguồn: [MySQL Windows installation](https://dev.mysql.com/doc/refman/8.4/en/windows-installation.html), [MySQL Configurator](https://dev.mysql.com/doc/refman/8.4/en/mysql-configurator.html), [Railway MySQL](https://docs.railway.com/databases/mysql).
+Nguồn: [MySQL Windows installation](https://dev.mysql.com/doc/refman/8.4/en/windows-installation.html), [MySQL Configurator](https://dev.mysql.com/doc/refman/8.4/en/mysql-configurator.html).

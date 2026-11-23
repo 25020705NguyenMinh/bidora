@@ -16,11 +16,35 @@ public class AdminApiClient extends BaseApiClient {
     }
     public void deleteUser(Long id) throws ApiException { call("DELETE", "/api/admin/users/" + id, null, null); }
 
+    public List<ItemResponse> allItems() throws ApiException {
+        return call("GET", "/api/admin/items", null, new TypeReference<List<ItemResponse>>() {});
+    }
+
     public List<ItemResponse> pendingItems() throws ApiException {
         return call("GET", "/api/admin/items/pending", null, new TypeReference<List<ItemResponse>>() {});
     }
-    public void approveItem(Long id) throws ApiException { call("POST", "/api/admin/items/" + id + "/approve", null, null); }
-    public void rejectItem(Long id) throws ApiException { call("POST", "/api/admin/items/" + id + "/reject", null, null); }
+
+    public void approveItem(Long id) throws ApiException {
+        approveItem(id, null);
+    }
+
+    public void approveItem(Long id, String feedback) throws ApiException {
+        ReviewFeedbackRequest body = (feedback != null && !feedback.isBlank()) ? new ReviewFeedbackRequest(feedback.trim()) : null;
+        call("POST", "/api/admin/items/" + id + "/approve", body, null);
+    }
+
+    public void rejectItem(Long id) throws ApiException {
+        rejectItem(id, null);
+    }
+
+    public void rejectItem(Long id, String feedback) throws ApiException {
+        ReviewFeedbackRequest body = (feedback != null && !feedback.isBlank()) ? new ReviewFeedbackRequest(feedback.trim()) : null;
+        call("POST", "/api/admin/items/" + id + "/reject", body, null);
+    }
+
+    public void deleteItem(Long id) throws ApiException {
+        call("DELETE", "/api/admin/items/" + id, null, null);
+    }
 
     public List<AdminAuctionResponse> auctions() throws ApiException {
         return call("GET", "/api/admin/auctions", null, new TypeReference<List<AdminAuctionResponse>>() {});

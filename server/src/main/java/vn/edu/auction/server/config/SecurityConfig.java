@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -66,8 +67,11 @@ public class SecurityConfig {
                                 "/api/health",
                                 "/login/**",
                                 "/login/oauth2/**",
-                                "/oauth2/**"
+                                "/oauth2/**",
+                                "/api/auth/me"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auctions", "/api/auctions/{id:[0-9]+}",
+                                "/api/auctions/{id:[0-9]+}/bids", "/api/users/{id:[0-9]+}/profile/{side:buyer|seller}").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

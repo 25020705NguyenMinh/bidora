@@ -39,15 +39,15 @@ public class BidService {
     @Transactional
     public BidResponse placeBid(Long auctionId, Long bidderId, PlaceBidRequest request) {
         AuctionEntity auction = auctions.findByIdForUpdate(auctionId).orElse(null);
-        AuctionRules.require(auction != null, HttpStatus.NOT_FOUND, "Khong tim thay phien dau gia.");
+        AuctionRules.require(auction != null && !auction.isHidden(), HttpStatus.NOT_FOUND, "Không tìm thấy phiên đấu giá.");
         users.requireRole(bidderId, UserRole.BIDDER);
         ItemEntity item = items.findById(auction.getItemId()).orElseThrow();
-        AuctionRules.require(!item.getSellerId().equals(bidderId), HttpStatus.FORBIDDEN, "Khong duoc dat gia san pham cua minh.");
+        AuctionRules.require(!item.getSellerId().equals(bidderId), HttpStatus.FORBIDDEN, "Không được đặt giá sản phẩm của mình.");
         LocalDateTime now = LocalDateTime.now(clock);
         requireOpen(auction, now);
-        AuctionRules.require(request != null, HttpStatus.BAD_REQUEST, "Thieu so tien dat gia.");
+        AuctionRules.require(request != null, HttpStatus.BAD_REQUEST, "Thiếu số tiền đặt giá.");
         BigDecimal amount = AuctionRules.money(request.getAmount());
-        AuctionRules.require(amount.compareTo(auction.getCurrentPrice()) > 0, HttpStatus.CONFLICT, "Gia moi phai cao hon gia hien tai.");
+        AuctionRules.require(amount.compareTo(auction.getCurrentPrice()) > 0, HttpStatus.CONFLICT, "Giá mới phải cao hơn giá hiện tại.");
 
         if (!now.isBefore(auction.getEndTime().minusSeconds(SNIPE_WINDOW_SECONDS))) {
             auction.setEndTime(auction.getEndTime().plusSeconds(EXTENSION_SECONDS));
@@ -68,18 +68,18 @@ public class BidService {
     }
 
     public List<BidResponse> getBidHistory(Long auctionId) {
-        AuctionRules.require(auctions.existsById(auctionId), HttpStatus.NOT_FOUND, "Khong tim thay phien dau gia.");
+        AuctionRules.require(auctions.existsByIdAndHiddenFalse(auctionId), HttpStatus.NOT_FOUND, "Không tìm thấy phiên đấu giá.");
         return bids.findByAuctionIdOrderByBidTimeDescIdDesc(auctionId).stream().map(this::response).toList();
     }
 
     private void requireOpen(AuctionEntity auction, LocalDateTime now) {
         boolean activeStatus = auction.getStatus() == AuctionStatus.RUNNING || auction.getStatus() == AuctionStatus.OPEN;
         AuctionRules.require(activeStatus && !now.isBefore(auction.getStartTime()) && now.isBefore(auction.getEndTime()),
-                HttpStatus.CONFLICT, "Phien chua mo hoac da ket thuc.");
+                HttpStatus.CONFLICT, "Phiên chưa mở hoặc đã kết thúc.");
     }
 
     private BidResponse response(BidTransactionEntity bid) {
         return new BidResponse(bid.getId(), bid.getAuctionId(), bid.getBidderId(), bid.getAmount(),
-                bid.getBidTime(), bid.getStatus(), "Dat gia thanh cong.");
+                bid.getBidTime(), bid.getStatus(), "Đặt giá thành công.");
     }
 }

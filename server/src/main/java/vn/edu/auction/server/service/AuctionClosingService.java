@@ -52,7 +52,7 @@ public class AuctionClosingService {
             try {
                 if (closeAuction(id)) closed++;
             } catch (RuntimeException e) {
-                log.error("Đóng phiên {} thất bại, sẽ thử lại ở lượt sau", id, e);
+                log.error("Dong phien {} that bai, se thu lai o luot sau", id, e);
             }
         }
         return closed;

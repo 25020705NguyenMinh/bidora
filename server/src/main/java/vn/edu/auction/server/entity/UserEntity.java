@@ -66,6 +66,9 @@ public class UserEntity {
     public String getPasswordHash() { return passwordHash; }
     public UserRole getRole() { return role; }
     public UserStatus getStatus() { return status; }
+    public vn.edu.auction.shared.model.User asDomainUser() {
+        return vn.edu.auction.shared.model.UserFactory.create(id, fullName, email, role, status);
+    }
 
     public void setId(Long id) { this.id = id; }
     public void setFullName(String fullName) { this.fullName = fullName; }

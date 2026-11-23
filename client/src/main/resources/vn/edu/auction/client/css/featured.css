@@ -1,0 +1,49 @@
+/* A matte and a continuous photographic field keep the object in focus. */
+.featured-panel { -fx-background-color: -bidora-feature-surface; }
+.featured-frame { -fx-background-color: -bidora-surface-soft; }
+.featured-copy { -fx-padding: 18 28 68 32; }
+.featured-thumbnails { -fx-padding: 0 0 22 32; }
+.featured-panel .featured-thumb {
+    -fx-min-width: 48; -fx-pref-width: 48; -fx-max-width: 48; -fx-min-height: 35; -fx-pref-height: 35; -fx-max-height: 35;
+    -fx-padding: 0; -fx-background-insets: 1; -fx-background-radius: 3; -fx-border-radius: 3;
+    -fx-background-color: -bidora-surface-hover; -fx-background-size: cover; -fx-background-position: center;
+    -fx-border-color: transparent; -fx-border-width: 2; -fx-opacity: .72;
+}
+.featured-panel .featured-thumb:hover, .featured-panel .featured-thumb:focus-visible { -fx-opacity: 1; -fx-border-color: white; }
+.featured-panel .featured-thumb:current { -fx-border-color: -bidora-feature-text; -fx-opacity: 1; }
+.featured-context { -fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: -bidora-feature-secondary; }
+.featured-title { -fx-font-weight: bold; -fx-font-size: 43px; -fx-text-fill: -bidora-feature-text; }
+.featured-description { -fx-font-size: 14px; -fx-text-fill: -bidora-feature-secondary; }
+.featured-price { -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: -bidora-feature-text; }
+.featured-panel .featured-action {
+    -fx-background-color: -bidora-feature-action; -fx-text-fill: -bidora-on-action; -fx-background-radius: 6;
+    -fx-padding: 10 16; -fx-min-height: 44; -fx-border-radius: 6;
+}
+.featured-panel .featured-action:hover { -fx-background-color: -bidora-action-hover; }
+.featured-action .line-icon { -fx-stroke: -bidora-on-action; }
+.featured-art { -fx-background-size: cover; -fx-background-position: center center; -fx-background-repeat: no-repeat; }
+.featured-controls { -fx-background-color: -bidora-image-overlay; -fx-background-radius: 6; -fx-padding: 2; }
+.featured-position { -fx-min-width: 42; -fx-font-size: 12px; -fx-text-fill: #ffffff; }
+.featured-panel .featured-control {
+    -fx-background-color: transparent; -fx-background-radius: 4; -fx-padding: 0;
+    -fx-min-width: 44; -fx-min-height: 42; -fx-border-color: transparent; -fx-border-radius: 4;
+}
+.featured-control .line-icon { -fx-stroke: #f2eee7; }
+.featured-panel .featured-control:hover { -fx-background-color: -bidora-surface-hover; }
+.featured-panel .featured-control:focus-visible, .featured-panel .featured-action:focus-visible { -fx-border-color: white; }
+.featured-credit { -fx-font-size: 11px; -fx-text-fill: #fff; -fx-effect: dropshadow(gaussian, #000, 5, .7, 0, 1); }
+.featured-time, .featured-time > .track, .featured-time > .bar {
+    -fx-padding: 0; -fx-background-insets: 0; -fx-background-radius: 0;
+}
+.featured-time > .track { -fx-background-color: rgba(221,222,244,.22); }
+.featured-time > .bar { -fx-background-color: -bidora-accent; }
+.featured-missing .label { -fx-text-fill: -bidora-accent; }
+.featured-missing .line-icon { -fx-stroke: -bidora-accent; }
+.featured-panel .featured-expand {
+    -fx-min-width: 44; -fx-min-height: 44; -fx-padding: 0;
+    -fx-background-color: -bidora-image-overlay; -fx-background-radius: 22;
+    -fx-border-color: transparent; -fx-border-radius: 22;
+}
+.featured-panel .featured-expand:hover { -fx-background-color: -bidora-surface-hover; }
+.featured-expand .line-icon { -fx-stroke: white; }
+.featured-panel .featured-expand:focus-visible { -fx-border-color: white; }

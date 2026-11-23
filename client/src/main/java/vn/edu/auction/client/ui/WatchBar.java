@@ -1,5 +1,7 @@
 package vn.edu.auction.client.ui;
 
+import vn.edu.auction.client.I18n;
+
 import java.util.List;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -21,6 +23,8 @@ public final class WatchBar extends HBox {
     private boolean watching;
     private boolean muted;
     private boolean following;
+    private boolean watchBusy;
+    private boolean followBusy;
     private Long sellerId;
 
     public WatchBar(Long auctionId, Long itemId) {
@@ -35,35 +39,49 @@ public final class WatchBar extends HBox {
         if (!SessionData.getInstance().isLoggedIn()) {
             watchBtn.setDisable(true);
             muteBtn.setDisable(true);
-            watchBtn.setTooltip(new Tooltip("Đăng nhập để theo dõi phiên này"));
+            watchBtn.setTooltip(new Tooltip(I18n.get("watch.login")));
             return;
         }
         watchBtn.setOnAction(e -> pushWatch(!watching, muted));
         muteBtn.setOnAction(e -> pushWatch(true, !muted));
         followBtn.setOnAction(e -> toggleFollow());
 
-        FxAsync.run(() -> api.getWatch(auctionId), s -> { watching = s.watching(); muted = s.muted(); refreshText(); }, e -> { });
+        watchBusy = true;
+        refreshText();
+        FxAsync.run(() -> api.getWatch(auctionId), s -> {
+            watching = s.watching(); muted = s.muted(); watchBusy = false; refreshText();
+        }, e -> { watchBusy = false; refreshText(); error(e); });
         FxAsync.run(() -> new ItemApiClient().getItemById(itemId).getSellerId(), sid -> {
             sellerId = sid;
             if (sid != null && !sid.equals(SessionData.getInstance().getUserId())) {
                 followBtn.setVisible(true);
                 followBtn.setManaged(true);
-                FxAsync.run(() -> api.getFollow(sid), f -> { following = f.following(); refreshText(); }, e -> { });
+                followBusy = true;
+                refreshText();
+                FxAsync.run(() -> api.getFollow(sid), f -> {
+                    following = f.following(); followBusy = false; refreshText();
+                }, e -> { followBusy = false; refreshText(); error(e); });
             }
-        }, e -> { });
+        }, this::error);
     }
 
     private void pushWatch(boolean w, boolean m) {
+        watchBusy = true;
+        refreshText();
         FxAsync.run(() -> api.setWatch(auctionId, w, m),
-                s -> { watching = s.watching(); muted = s.muted(); refreshText(); }, this::error);
+                s -> { watching = s.watching(); muted = s.muted(); watchBusy = false; refreshText(); },
+                e -> { watchBusy = false; refreshText(); error(e); });
     }
 
     private void toggleFollow() {
         boolean target = !following;
+        followBusy = true;
+        refreshText();
         FxAsync.run(() -> {
             if (target) api.follow(sellerId); else api.unfollow(sellerId);
             return target;
-        }, v -> { following = v; refreshText(); }, this::error);
+        }, v -> { following = v; followBusy = false; refreshText(); },
+                e -> { followBusy = false; refreshText(); error(e); });
     }
 
     private void error(Throwable t) {
@@ -71,9 +89,11 @@ public final class WatchBar extends HBox {
     }
 
     private void refreshText() {
-        watchBtn.setText(watching ? "★ Đang theo dõi" : "☆ Theo dõi sản phẩm");
-        muteBtn.setText(muted ? "🔔 Bật thông báo" : "🔕 Tắt thông báo");
-        muteBtn.setDisable(!watching);
-        followBtn.setText(following ? "✓ Đang theo dõi người bán" : "＋ Theo dõi người bán");
+        watchBtn.setText(watchBusy ? I18n.get("common.loading") : watching ? I18n.get("watch.watching") : I18n.get("watch.add"));
+        watchBtn.setDisable(watchBusy);
+        muteBtn.setText(muted ? I18n.get("watch.unmute") : I18n.get("watch.mute"));
+        muteBtn.setDisable(watchBusy || !watching);
+        followBtn.setDisable(followBusy);
+        followBtn.setText(following ? I18n.get("watch.following") : I18n.get("watch.follow"));
     }
 }

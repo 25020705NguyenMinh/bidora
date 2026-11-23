@@ -10,8 +10,11 @@ public class Bidder extends User {
     }
 
     public Bidder() {
-        super();
-        setRole(UserRole.BIDDER);
+        super(null, null, null, UserRole.BIDDER, null);
+    }
+
+    @Override public java.util.Set<UserRole> permissions() {
+        return TRADING;
     }
 
 }

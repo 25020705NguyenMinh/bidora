@@ -1,0 +1,21 @@
+/* Dark mode changes palette values, never geometry. */
+.root, .dialog-pane {
+    -bidora-canvas: #211f1b;
+    -bidora-surface: #2c2924;
+    -bidora-surface-soft: #36322c;
+    -bidora-surface-hover: #464037;
+    -bidora-text: #f2eee5;
+    -bidora-muted: #c2baab;
+    -bidora-border: #514a3f;
+    -bidora-accent: #e2c493;
+    -bidora-action: #e7ceaa;
+    -bidora-action-hover: #f1ddbf;
+    -bidora-on-action: #30281d;
+    -bidora-focus-wash: #e2c49326;
+    -bidora-danger: #ffb3a5;
+    -bidora-danger-surface: #4a2925;
+    -bidora-success: #9cd6af;
+    -bidora-on-image: #fffefa;
+    -bidora-image-overlay: #24211ce6;
+    -bidora-shadow: #00000040;
+}

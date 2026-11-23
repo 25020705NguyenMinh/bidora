@@ -11,7 +11,7 @@ import vn.edu.auction.shared.dto.ApiErrorResponse;
 
 @Order(-1)
 @RestControllerAdvice(assignableTypes = {ItemController.class, AuctionController.class, BidController.class,
-        AccountController.class, SocialController.class, AdminController.class})
+        AccountController.class, TradingProfileController.class, SocialController.class, AdminController.class})
 public class AuctionApiExceptionHandler {
     @ExceptionHandler(AuctionBusinessException.class)
     public ResponseEntity<ApiErrorResponse> handleBusiness(AuctionBusinessException ex, HttpServletRequest request) {
@@ -20,7 +20,7 @@ public class AuctionApiExceptionHandler {
 
     @ExceptionHandler({ConcurrencyFailureException.class, DataIntegrityViolationException.class})
     public ResponseEntity<ApiErrorResponse> handleConflict(Exception ex, HttpServletRequest request) {
-        return response(HttpStatus.CONFLICT, "Du lieu vua thay doi. Vui long tai lai va thu lai.", request);
+        return response(HttpStatus.CONFLICT, "Dữ liệu vừa thay đổi. Vui lòng tải lại và thử lại.", request);
     }
 
     private ResponseEntity<ApiErrorResponse> response(HttpStatus status, String message, HttpServletRequest request) {

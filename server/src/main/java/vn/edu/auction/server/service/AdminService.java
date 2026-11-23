@@ -1,6 +1,8 @@
 package vn.edu.auction.server.service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -95,22 +97,79 @@ public class AdminService {
         target.setRole(UserRole.ADMIN); // JPA tự lưu khi commit (class đang @Transactional)
 
         // Nâng quyền là thao tác nhạy cảm: ghi lại ai nâng ai để truy vết
-        log.warn("ADMIN #{} đã nâng tài khoản #{} ({}) lên ADMIN", adminId, targetId, target.getEmail());
+        log.warn("ADMIN #{} da nang tai khoan #{} ({}) len ADMIN", adminId, targetId, target.getEmail());
 
         social.notify(targetId, "ROLE_CHANGED",
                 "Bạn đã được nâng lên quản trị viên. Hãy đăng nhập lại để dùng trang quản trị.", targetId);
     }
 
-    // ---------- Trang 2: sản phẩm chờ duyệt (DRAFT) ----------
+    // ---------- Quản lý sản phẩm (ADMIN) ----------
+    @Transactional(readOnly = true)
+    public List<ItemResponse> allItems() {
+        var all = items.findAll();
+        log.info("AdminService.allItems - total items in DB: {}", all.size());
+        for (var i : all) {
+            log.info("  item id={} status={} sellerId={}", i.getId(), i.getStatus(), i.getSellerId());
+        }
+        Map<Long, AuctionEntity> auctionByItem = auctions.findAll().stream()
+                .collect(Collectors.toMap(AuctionEntity::getItemId, a -> a, (a1, a2) -> a1));
+        var result = all.stream()
+                .filter(i -> i.getStatus() == null || i.getStatus() != ItemStatus.REMOVED)
+                .map(i -> {
+                    AuctionEntity a = auctionByItem.get(i.getId());
+                    var dto = new ItemResponse(i.getId(), i.getSellerId(), i.getName(), i.getDescription(),
+                            i.getStartingPrice(), i.getStatus(), a != null ? a.getStatus() : null);
+                    dto.setImage(i.getImage());
+                    return dto;
+                }).toList();
+        log.info("AdminService.allItems - after filter REMOVED: {}", result.size());
+        return result;
+    }
+
     @Transactional(readOnly = true)
     public List<ItemResponse> pendingItems() {
         return items.findByStatus(ItemStatus.DRAFT).stream()
-                .map(i -> new ItemResponse(i.getId(), i.getSellerId(), i.getName(), i.getDescription(),
-                        i.getStartingPrice(), i.getStatus())).toList();
+                .map(i -> {
+                    var dto = new ItemResponse(i.getId(), i.getSellerId(), i.getName(), i.getDescription(), i.getStartingPrice(), i.getStatus());
+                    dto.setImage(i.getImage());
+                    return dto;
+                }).toList();
     }
 
-    public void approveItem(Long id) { review(id, ItemStatus.ACTIVE, "đã được duyệt, bạn có thể tạo phiên đấu giá."); }
-    public void rejectItem(Long id) { review(id, ItemStatus.REMOVED, "đã bị từ chối."); }
+    public void approveItem(Long id) {
+        approveItem(id, null);
+    }
+
+    public void approveItem(Long id, String feedback) {
+        String msg = (feedback != null && !feedback.isBlank())
+                ? "đã được phê duyệt. Phản hồi từ quản trị viên: " + feedback.trim()
+                : "đã được duyệt, bạn có thể tạo phiên đấu giá.";
+        review(id, ItemStatus.ACTIVE, msg);
+    }
+
+    public void rejectItem(Long id) {
+        rejectItem(id, null);
+    }
+
+    public void rejectItem(Long id, String feedback) {
+        String msg = (feedback != null && !feedback.isBlank())
+                ? "đã bị từ chối. Lý do: " + feedback.trim()
+                : "đã bị từ chối.";
+        review(id, ItemStatus.REMOVED, msg);
+    }
+
+    public void deleteItem(Long id) {
+        ItemEntity item = items.findByIdForUpdate(id).orElse(null);
+        AuctionRules.require(item != null && item.getStatus() != ItemStatus.REMOVED, HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm.");
+        item.setStatus(ItemStatus.REMOVED);
+        auctions.findByItemId(id).ifPresent(a -> {
+            if (a.getStatus() == AuctionStatus.OPEN || a.getStatus() == AuctionStatus.RUNNING) {
+                a.setStatus(AuctionStatus.CANCELED);
+                auctions.save(a);
+            }
+        });
+        social.notify(item.getSellerId(), "ITEM_REVIEW", "Sản phẩm \"" + item.getName() + "\" đã bị quản trị viên xóa.", item.getId());
+    }
 
     private void review(Long id, ItemStatus next, String text) {
         ItemEntity item = items.findByIdForUpdate(id).orElse(null);

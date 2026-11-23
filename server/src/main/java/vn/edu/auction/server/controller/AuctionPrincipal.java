@@ -9,7 +9,7 @@ final class AuctionPrincipal {
 
     static Long userId(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof Long id)) {
-            throw new AuctionBusinessException(HttpStatus.UNAUTHORIZED, "Vui long dang nhap bang JWT.");
+            throw new AuctionBusinessException(HttpStatus.UNAUTHORIZED, "Vui lòng đăng nhập bằng JWT.");
         }
         return id;
     }

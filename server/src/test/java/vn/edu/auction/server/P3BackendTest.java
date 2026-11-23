@@ -44,18 +44,40 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "MAIL_PASSWORD=p3-test",
 })
 @AutoConfigureMockMvc
+@org.springframework.test.context.ActiveProfiles("test")
 class P3BackendTest {
     @SpringBootConfiguration
     @EnableAutoConfiguration
     @EntityScan("vn.edu.auction.server.entity")
     @EnableJpaRepositories("vn.edu.auction.server.repository")
     @Import({ItemService.class, AuctionService.class, BidService.class, AuctionUserService.class,
-            SocialService.class, UserSocketHandler.class, AuctionEventPublisher.class, AuctionClosingService.class,
-            ItemController.class, AuctionController.class, BidController.class,
-            AuctionApiExceptionHandler.class, GlobalExceptionHandler.class, SecurityConfig.class, JwtService.class})
+        SocialService.class, UserSocketHandler.class, AuctionEventPublisher.class, AuctionClosingService.class, AuctionActivationService.class,
+        ItemController.class, AuctionController.class, BidController.class, TradingProfileService.class,
+        TradingProfileController.class, AuthService.class, OtpService.class, MailService.class, AuthController.class,
+        AuctionApiExceptionHandler.class, GlobalExceptionHandler.class, SecurityConfig.class, JwtService.class})
     static class TestApp {
         @Bean MutableClock auctionClock() { return new MutableClock(); }
         @Bean EventCollector eventCollector() { return new EventCollector(); }
+        @Bean @Primary TestMailbox testMailbox() { return new TestMailbox(); }
+    }
+
+    static class TestMailbox extends MailService {
+        boolean unavailable;
+        String code;
+
+        TestMailbox() {
+            super("test-api-key", "no-reply@test.local", "Tech Auction", new com.fasterxml.jackson.databind.ObjectMapper());
+        }
+
+        @Override
+        public void sendOtp(String to, String otpCode, long expirationMinutes) {
+            if (unavailable) {
+                throw new EmailSendException(new IllegalStateException("Test transport unavailable"));
+            }
+            assertNotNull(otpCode);
+            assertTrue(otpCode.matches("[0-9]{6}"));
+            this.code = otpCode;
+        }
     }
 
     static class MutableClock extends Clock {
@@ -72,6 +94,24 @@ class P3BackendTest {
         public void accepted(BidAcceptedEvent event) { events.add(event); }
     }
 
+    @Test void productImagePersistsAndInvalidUploadIsRejected() throws Exception {
+        var bytes = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(16, 16,
+                java.awt.image.BufferedImage.TYPE_INT_RGB), "jpeg", bytes);
+        String image = Base64.getEncoder().encodeToString(bytes.toByteArray());
+        ItemRequest request = new ItemRequest("Watch", "Uploaded photo", BigDecimal.TEN);
+        request.setImage(image);
+        ItemResponse saved = itemService.createItem(request, seller);
+        assertEquals(image, itemService.getItemById(saved.getId(), seller).getImage());
+        ItemRequest legacy = new ItemRequest("Watch", "Updated", BigDecimal.TEN);
+        assertEquals(image, itemService.updateItem(saved.getId(), legacy, seller).getImage());
+        request.setImage("invalid");
+        assertThrows(AuctionBusinessException.class, () -> itemService.updateItem(saved.getId(), request, seller));
+        assertEquals(image, itemService.getItemById(saved.getId(), seller).getImage());
+        request.setImage("");
+        assertEquals("", itemService.updateItem(saved.getId(), request, seller).getImage());
+    }
+
     @Autowired ItemService itemService;
     @Autowired AuctionService auctionService;
     @Autowired BidService bidService;
@@ -83,8 +123,11 @@ class P3BackendTest {
     @Autowired EventCollector collector;
     @Autowired PlatformTransactionManager transactionManager;
     @Autowired AuctionClosingService closing;
+    @Autowired AuctionActivationService activation;
     @Autowired MockMvc mvc;
     @Autowired JwtService jwt;
+    @Autowired TestMailbox mailbox;
+    @Autowired TradingProfileService trading;
     Long seller;
     Long bidder;
     Long otherBidder;
@@ -92,6 +135,7 @@ class P3BackendTest {
 
     @BeforeEach
     void prepare() {
+        mailbox.unavailable = false;
         bids.deleteAll(); auctions.deleteAll(); items.deleteAll(); users.deleteAll();
         collector.events.clear();
         now = LocalDateTime.of(2030, 1, 1, 12, 0);
@@ -124,13 +168,13 @@ class P3BackendTest {
 
     @Test void itemCrudAndOwnerChecks() {
         ItemResponse item = itemService.createItem(new ItemRequest("Camera", "", new BigDecimal("100")), seller);
-        assertEquals(1, itemService.getAllItems().size());
+        assertEquals(1, itemService.getAllItems(seller).size());
         Long anotherSeller = user("seller2", UserRole.SELLER);
         assertThrows(AuctionBusinessException.class, () -> itemService.updateItem(item.getId(), new ItemRequest("Other", "", BigDecimal.TEN), anotherSeller));
         assertEquals("Updated", itemService.updateItem(item.getId(), new ItemRequest("Updated", "", BigDecimal.TEN), seller).getName());
         itemService.deleteItem(item.getId(), seller);
-        assertTrue(itemService.getAllItems().isEmpty());
-        assertThrows(AuctionBusinessException.class, () -> itemService.getItemById(item.getId()));
+        assertTrue(itemService.getAllItems(seller).isEmpty());
+        assertThrows(AuctionBusinessException.class, () -> itemService.getItemById(item.getId(), seller));
     }
 
     @Test void rejectsInvalidMoneyAndNames() {
@@ -138,8 +182,15 @@ class P3BackendTest {
             assertThrows(AuctionBusinessException.class, () -> itemService.createItem(new ItemRequest("Item", "", new BigDecimal(amount)), seller));
         }
         assertThrows(AuctionBusinessException.class, () -> itemService.createItem(new ItemRequest(" ", "", BigDecimal.TEN), seller));
+    }
+
+    @Test void adminTradesUsingTheSameAccountId() {
         Long admin = user("admin", UserRole.ADMIN);
-        assertThrows(AuctionBusinessException.class, () -> itemService.createItem(new ItemRequest("Item", "", BigDecimal.TEN), admin));
+        var own = itemService.createItem(new ItemRequest("Item", "", BigDecimal.TEN), admin);
+        approve(own.getId());
+        var sale = auctionService.createAuction(new AuctionRequest(own.getId(), now, now.plusHours(1)), admin);
+        assertThrows(AuctionBusinessException.class, () -> bid(sale.getId(), admin, "20"));
+        assertEquals(admin, bid(auction(300).getId(), admin, "200").getBidderId());
     }
 
     @Test void ordinaryAccountCanSellAndBidButCannotBidOnOwnItem() {
@@ -234,6 +285,28 @@ class P3BackendTest {
         assertEquals(AuctionStatus.RUNNING, auctionService.getAuctionById(auction.getId()).getStatus());
     }
 
+    @Test void schedulerActivatesScheduledAuctionExactlyOnceWhenDue() {
+        ItemResponse item = itemService.createItem(new ItemRequest("Item", "", BigDecimal.TEN), seller);
+        approve(item.getId());
+        AuctionResponse auction = auctionService.createAuction(new AuctionRequest(item.getId(), now.plusMinutes(5), now.plusMinutes(15)), seller);
+        assertEquals(AuctionStatus.OPEN, auction.getStatus());
+        assertEquals(0, activation.activateDueAuctions()); // chưa tới giờ
+        clock.set(now.plusMinutes(5).minusSeconds(1));
+        assertEquals(0, activation.activateDueAuctions());
+        clock.set(now.plusMinutes(5));
+        assertEquals(1, activation.activateDueAuctions()); // đúng giờ
+        assertEquals(AuctionStatus.RUNNING, auctionService.getAuctionById(auction.getId()).getStatus());
+        assertEquals(0, activation.activateDueAuctions()); // idempotent
+        assertEquals(now.plusMinutes(15), auctionService.getAuctionById(auction.getId()).getEndTime());
+    }
+
+    @Test void rejectsStartTimeInThePast() {
+        ItemResponse item = itemService.createItem(new ItemRequest("Item", "", BigDecimal.TEN), seller);
+        approve(item.getId());
+        assertThrows(AuctionBusinessException.class, () -> auctionService.createAuction(
+                new AuctionRequest(item.getId(), now.minusMinutes(5), now.plusMinutes(5)), seller));
+    }
+
     @Test void rejectsInactiveBidderAndSelfBidding() {
         AuctionResponse auction = auction(300);
         UserEntity user = users.findById(bidder).orElseThrow();
@@ -297,6 +370,24 @@ class P3BackendTest {
         assertEquals(result.getCurrentPrice(), history.get(0).getAmount());
     }
 
+    @Test void guestCanReadVisibleAuctionsButCannotBidOrReadHiddenAuctions() throws Exception {
+        AuctionResponse auction = auction(300);
+        String url = "/api/auctions/" + auction.getId();
+        mvc.perform(get("/api/auctions")).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(auction.getId()));
+        mvc.perform(get(url)).andExpect(status().isOk());
+        mvc.perform(get(url + "/bids")).andExpect(status().isOk());
+        mvc.perform(post(url + "/bids").contentType("application/json").content("{\"amount\":200}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get(url + "/watch")).andExpect(status().isUnauthorized());
+        var hidden = auctions.findById(auction.getId()).orElseThrow();
+        hidden.setHidden(true);
+        auctions.saveAndFlush(hidden);
+        mvc.perform(get("/api/auctions")).andExpect(jsonPath("$").isEmpty());
+        mvc.perform(get(url)).andExpect(status().isNotFound());
+        mvc.perform(get(url + "/bids")).andExpect(status().isNotFound());
+    }
+
     @Test void apiUsesJwtIdentityAndKeepsExistingGuestRestriction() throws Exception {
         String sellerToken = jwt.generateToken(users.findById(seller).orElseThrow());
         String bidderToken = jwt.generateToken(users.findById(bidder).orElseThrow());
@@ -322,6 +413,104 @@ class P3BackendTest {
         UserEntity user = users.findById(bidder).orElseThrow();
         user.setStatus(UserStatus.BANNED); users.save(user);
         mvc.perform(get("/api/items").header("Authorization", "Bearer " + token)).andExpect(status().isUnauthorized());
+    }
+
+    @Test void itemDetailUsesTheSameReviewVisibilityAsTheList() throws Exception {
+        ItemResponse item = itemService.createItem(new ItemRequest("Camera", "", BigDecimal.TEN), seller);
+        String url = "/api/items/" + item.getId();
+        Long admin = user("reviewer", UserRole.ADMIN);
+        for (Long viewer : List.of(seller, admin)) {
+            String token = jwt.generateToken(users.findById(viewer).orElseThrow());
+            mvc.perform(get(url).header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(item.getId()));
+        }
+        String token = jwt.generateToken(users.findById(bidder).orElseThrow());
+        mvc.perform(get("/api/items").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+        mvc.perform(get(url).header("Authorization", "Bearer " + token)).andExpect(status().isNotFound());
+        approve(item.getId());
+        mvc.perform(get(url).header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+    }
+
+    @Test void onlyMaterialEditsRequireAnotherReview() {
+        ItemResponse item = itemService.createItem(new ItemRequest("Camera", "", BigDecimal.TEN), seller);
+        approve(item.getId());
+        assertEquals(ItemStatus.ACTIVE, itemService.updateItem(item.getId(),
+                new ItemRequest(" Camera ", null, new BigDecimal("10.00")), seller).getStatus());
+        assertEquals(ItemStatus.DRAFT, itemService.updateItem(item.getId(),
+                new ItemRequest("Camera", "", new BigDecimal("20")), seller).getStatus());
+        assertThrows(AuctionBusinessException.class, () -> auctionService.createAuction(
+                new AuctionRequest(item.getId(), now, now.plusHours(1)), seller));
+        approve(item.getId());
+        assertEquals(AuctionStatus.RUNNING, auctionService.createAuction(
+                new AuctionRequest(item.getId(), now, now.plusHours(1)), seller).getStatus());
+    }
+
+    @Test void hidingAnAuctionStopsBiddingAndUnhidingRestoresIt() {
+        AuctionResponse auction = auction(300);
+        AuctionEntity entity = auctions.findById(auction.getId()).orElseThrow();
+        entity.setHidden(true);
+        auctions.saveAndFlush(entity);
+        var error = assertThrows(AuctionBusinessException.class, () -> bid(auction.getId(), bidder, "150"));
+        assertEquals(org.springframework.http.HttpStatus.NOT_FOUND, error.getStatus());
+        assertEquals(0, bids.countByAuctionId(auction.getId()));
+        assertTrue(collector.events.isEmpty());
+        entity.setHidden(false);
+        auctions.saveAndFlush(entity);
+        bid(auction.getId(), bidder, "150");
+        assertEquals(1, bids.countByAuctionId(auction.getId()));
+    }
+
+    @Test void registerRetriesAfterMailFailureAndRecoversPasswordWithOtp() throws Exception {
+        String info = "{\"email\":\"register@example.test\",\"fullName\":\"An\",\"password\":\"original123\"}";
+        mailbox.unavailable = true;
+        mvc.perform(post("/api/auth/register").contentType("application/json").content(info))
+                .andExpect(status().isServiceUnavailable()).andExpect(header().string("X-Bidora-Error", "OTP_DELIVERY_FAILED"));
+        assertFalse(users.existsByEmail("register@example.test"));
+        mailbox.unavailable = false;
+        mvc.perform(post("/api/auth/register").contentType("application/json").content(info))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.role").value("BIDDER"));
+        String email = "\"email\":\"register@example.test\"";
+        mvc.perform(post("/api/auth/verify-email").contentType("application/json")
+                .content("{" + email + ",\"otp\":\"" + mailbox.code + "\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.token").isNotEmpty());
+        mvc.perform(post("/api/auth/forgot-password").contentType("application/json").content("{" + email + "}"))
+                .andExpect(status().isOk());
+        mvc.perform(post("/api/auth/reset-password").contentType("application/json")
+                .content("{" + email + ",\"otp\":\"" + mailbox.code + "\",\"newPassword\":\"changed123\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(post("/api/auth/login").contentType("application/json").content(info)).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/auth/login").contentType("application/json").content("{" + email + ",\"password\":\"changed123\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test void splitProfilesShareOneOwnerAndExposeOnlyTheSelectedPublicCard() throws Exception {
+        var common = trading.get(bidder);
+        assertEquals(common.publicCard(false), common.publicCard(true));
+        var buyerCard = new TradingProfiles.Card("Người mua", "Sưu tầm máy ảnh", "");
+        var pixels = new java.awt.image.BufferedImage(2, 2, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        var png = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(pixels, "png", png);
+        String avatar = Base64.getEncoder().encodeToString(png.toByteArray());
+        var sellerCard = new TradingProfiles.Card("Cửa hàng", "Bán máy ảnh", avatar);
+        trading.save(bidder, new TradingProfiles(true, buyerCard, sellerCard));
+        String url = "/api/users/" + bidder + "/profile/";
+        mvc.perform(get(url + "seller")).andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Cửa hàng"))
+                .andExpect(jsonPath("$.avatar").value(avatar)).andExpect(jsonPath("$.email").doesNotExist());
+        assertEquals("Người mua", users.directory(seller).stream().filter(u -> u.id().equals(bidder))
+                .findFirst().orElseThrow().fullName());
+        mvc.perform(get(url + "buyer")).andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Người mua"));
+        mvc.perform(get("/api/me/trading-profiles")).andExpect(status().isUnauthorized());
+        var item = itemService.createItem(new ItemRequest("Camera", "", BigDecimal.TEN), bidder);
+        approve(item.getId());
+        var sale = auctionService.createAuction(new AuctionRequest(item.getId(), now, now.plusHours(1)), bidder);
+        assertEquals(bidder, sale.getSellerId());
+        assertThrows(AuctionBusinessException.class, () -> bid(sale.getId(), bidder, "20"));
+        trading.save(bidder, new TradingProfiles(false, buyerCard, sellerCard));
+        mvc.perform(get(url + "seller")).andExpect(jsonPath("$.name").value("Người mua"));
+        assertThrows(AuctionBusinessException.class, () -> trading.save(bidder, new TradingProfiles(true, buyerCard,
+                new TradingProfiles.Card("Bad", "", "not-an-image"))));
+        assertEquals(buyerCard, trading.get(bidder).publicCard(true));
     }
 
     @Test void rejectsAuctionForUnapprovedItem() {

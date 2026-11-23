@@ -2,7 +2,6 @@ package vn.edu.auction.server.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import vn.edu.auction.shared.enums.*;
 
 @Entity
@@ -23,6 +22,12 @@ public class ItemEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private ItemStatus status;
+
+    @Column(name = "image", columnDefinition = "LONGTEXT")
+    private String image;
+
+    public String getImage() { return image; }
+    public void setImage(String image) { this.image = image; }
 
     public ItemEntity() {}
 

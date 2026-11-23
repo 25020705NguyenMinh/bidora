@@ -1,5 +1,7 @@
 package vn.edu.auction.client.ui;
 
+import vn.edu.auction.client.I18n;
+
 import java.math.BigDecimal;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -14,63 +16,113 @@ import javafx.stage.Window;
 import vn.edu.auction.client.api.BaseApiClient;
 import vn.edu.auction.client.api.FxAsync;
 import vn.edu.auction.client.api.UserApiClient;
+import vn.edu.auction.shared.dto.ExtraDto.WalletResponse;
 import vn.edu.auction.shared.dto.ExtraDto.WalletTxResponse;
 
 /** Ví: số dư, nạp tiền, rút tiền, lịch sử giao dịch. */
 public final class WalletDialog {
     private WalletDialog() {}
 
-    private interface MoneyCall { Object run(BigDecimal v) throws Exception; }
+    private interface MoneyCall { WalletResponse run(BigDecimal v) throws Exception; }
 
     public static void show(Window owner) {
         UserApiClient api = new UserApiClient();
         Dialog<Void> d = new Dialog<>();
         d.initOwner(owner);
-        d.setTitle("Ví của tôi");
+        I18n.localize(d.titleProperty(), "wallet.myWallet");
 
-        Label balance = new Label("Số dư: ...");
-        balance.setStyle("-fx-font-size:18;-fx-font-weight:bold;");
+        Label balance = new Label("…");
+        balance.getStyleClass().add("detail-price");
+        Label caption = I18n.caption(new Label(), "wallet.balance");
+        caption.getStyleClass().add("detail-caption");
         Label msg = new Label();
+        msg.setWrapText(true);
         TextField amount = new TextField();
-        amount.setPromptText("Số tiền (đ)");
-        Button dep = new Button("Nạp tiền");
-        Button wd = new Button("Rút tiền");
+        I18n.localize(amount.promptTextProperty(), "wallet.amountPrompt");
+        Button dep = I18n.caption(new Button(), "wallet.deposit");
+        dep.setGraphic(new UiIcon(UiIcon.Kind.DEPOSIT));
+        dep.getStyleClass().add("primary-button");
+        Button wd = I18n.caption(new Button(), "wallet.withdraw");
+        wd.setGraphic(new UiIcon(UiIcon.Kind.UPLOAD));
         TableView<WalletTxResponse> table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.setPlaceholder(new Label("Chưa có giao dịch."));
-        UiKit.col(table, "Thời gian", t -> UiKit.dtSec(t.createdAt()));
-        UiKit.col(table, "Loại", t -> "DEPOSIT".equals(t.type()) ? "Nạp tiền" : "Rút tiền");
-        UiKit.col(table, "Số tiền", t -> UiKit.money(t.amount()));
-        UiKit.col(table, "Số dư sau", t -> UiKit.money(t.balanceAfter()));
-
-        Runnable reload = () -> {
-            FxAsync.run(api::wallet, w -> balance.setText("Số dư: " + UiKit.money(w.balance())),
-                    e -> msg.setText(BaseApiClient.describe(e)));
-            FxAsync.run(api::walletHistory, h -> table.getItems().setAll(h),
-                    e -> msg.setText(BaseApiClient.describe(e)));
-        };
-        dep.setOnAction(e -> submit(amount, msg, api::deposit, reload));
-        wd.setOnAction(e -> submit(amount, msg, api::withdraw, reload));
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        Label historyState = I18n.caption(new Label(), "wallet.loading");
+        table.setPlaceholder(historyState);
+        UiKit.col(table, "wallet.time", t -> UiKit.dtSec(t.createdAt()));
+        UiKit.col(table, "wallet.type", t -> "DEPOSIT".equals(t.type()) ? I18n.get("wallet.deposit") : I18n.get("wallet.withdraw"));
+        UiKit.col(table, "wallet.amount", t -> UiKit.money(t.amount()));
+        UiKit.col(table, "wallet.after", t -> UiKit.money(t.balanceAfter()));
+        table.getColumns().get(2).getStyleClass().add("amount-column");
+        table.getColumns().get(3).getStyleClass().add("amount-column");
 
         HBox actions = new HBox(8, amount, dep, wd);
+        Runnable loadHistory = new Runnable() {
+            private int latest;
+            @Override public void run() {
+                int request = ++latest;
+                FxAsync.run(api::walletHistory, h -> {
+                    if (request != latest) return;
+                    table.getItems().setAll(h);
+                    I18n.localize(historyState.textProperty(), "wallet.empty");
+                }, e -> {
+                    if (request != latest) return;
+                    I18n.track(msg.textProperty(), () -> BaseApiClient.describe(e));
+                    I18n.localize(historyState.textProperty(), "wallet.loadError");
+                });
+            }
+        };
+        dep.setOnAction(e -> submit(amount, actions, balance, msg, api::deposit, loadHistory));
+        wd.setOnAction(e -> submit(amount, actions, balance, msg, api::withdraw, loadHistory));
         HBox.setHgrow(amount, Priority.ALWAYS);
-        VBox content = new VBox(10, balance, actions, msg, table);
+        Label history = I18n.caption(new Label(), "wallet.history");
+        history.setGraphic(new UiIcon(UiIcon.Kind.HISTORY));
+        history.getStyleClass().add("history-title");
+        VBox content = new VBox(14, new VBox(3, caption, balance), actions, msg, history, table);
+        VBox.setVgrow(table, Priority.ALWAYS);
         content.setPrefSize(560, 420);
         d.getDialogPane().setContent(content);
         d.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
         UiTheme.apply(d.getDialogPane());
-        reload.run();
+        vn.edu.auction.client.ui.UiMotion.install(d);
+        actions.setDisable(true);
+        FxAsync.run(api::wallet, w -> {
+            balance.setText(UiKit.money(w.balance()));
+            actions.setDisable(false);
+        }, e -> {
+            balance.setText("—");
+            I18n.track(msg.textProperty(), () -> BaseApiClient.describe(e));
+            actions.setDisable(false);
+        });
+        loadHistory.run();
         d.show();
     }
 
-    private static void submit(TextField f, Label msg, MoneyCall call, Runnable reload) {
+    private static void submit(TextField f, HBox actions, Label balance, Label msg, MoneyCall call, Runnable loadHistory) {
         BigDecimal v;
         try {
             v = new BigDecimal(f.getText().trim());
         } catch (NumberFormatException e) {
-            msg.setText("Số tiền không hợp lệ.");
+            I18n.localize(msg.textProperty(), "auction.invalidBid");
+            UiMotion.error(f);
             return;
         }
-        UiKit.act(msg, () -> call.run(v), () -> { f.clear(); reload.run(); });
+        if (v.signum() <= 0) {
+            I18n.localize(msg.textProperty(), "wallet.positive");
+            UiMotion.error(f);
+            return;
+        }
+        actions.setDisable(true);
+        I18n.localize(msg.textProperty(), "wallet.processing");
+        FxAsync.run(() -> call.run(v), wallet -> {
+            balance.setText(UiKit.money(wallet.balance()));
+            UiMotion.pulse(balance);
+            f.clear();
+            I18n.localize(msg.textProperty(), "wallet.success");
+            actions.setDisable(false);
+            loadHistory.run();
+        }, err -> {
+            I18n.track(msg.textProperty(), () -> BaseApiClient.describe(err));
+            actions.setDisable(false);
+        });
     }
 }

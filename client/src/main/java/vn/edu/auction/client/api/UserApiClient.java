@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import vn.edu.auction.client.api.AuthApiClient.ApiException;
 import vn.edu.auction.shared.dto.ExtraDto.*;
+import vn.edu.auction.shared.dto.TradingProfiles;
 
 /** Ví, hồ sơ, thông báo, theo dõi phiên, follow người bán, chat. */
 public class UserApiClient extends BaseApiClient {
@@ -23,6 +24,15 @@ public class UserApiClient extends BaseApiClient {
     }
 
     // ---- hồ sơ ----
+    public TradingProfiles tradingProfiles() throws ApiException {
+        return call("GET", "/api/me/trading-profiles", null, new TypeReference<>() {});
+    }
+    public TradingProfiles saveTradingProfiles(TradingProfiles data) throws ApiException {
+        return call("PUT", "/api/me/trading-profiles", data, new TypeReference<>() {});
+    }
+    public TradingProfiles.Card publicProfile(long id, boolean seller) throws ApiException {
+        return call("GET", "/api/users/" + id + "/profile/" + (seller ? "seller" : "buyer"), null, new TypeReference<>() {});
+    }
     public ProfileResponse profile() throws ApiException {
         return call("GET", "/api/me/profile", null, new TypeReference<ProfileResponse>() {});
     }

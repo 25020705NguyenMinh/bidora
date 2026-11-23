@@ -1,5 +1,7 @@
 package vn.edu.auction.client.model;
 
+import vn.edu.auction.client.I18n;
+
 import vn.edu.auction.shared.dto.AuthResponse;
 import vn.edu.auction.shared.enums.UserRole;
 /**
@@ -16,6 +18,17 @@ public class SessionData {
     private String email;
     private UserRole role; 
     private String token;
+    private boolean previewMode;
+    private boolean sellerProfile;
+    private vn.edu.auction.shared.dto.TradingProfiles tradingProfiles;
+
+    public boolean isSellerProfile() { return sellerProfile; }
+    public void setSellerProfile(boolean sellerProfile) { this.sellerProfile = sellerProfile; }
+    public vn.edu.auction.shared.dto.TradingProfiles getTradingProfiles() { return tradingProfiles; }
+    public void setTradingProfiles(vn.edu.auction.shared.dto.TradingProfiles profiles) {
+        tradingProfiles = profiles;
+        if (!profiles.separate()) sellerProfile = false;
+    }
 
     // singleton pattern
     private SessionData() {}
@@ -40,6 +53,8 @@ public class SessionData {
         if (response == null) {
             throw new IllegalArgumentException("AuthResponse không được null");
         }
+        sellerProfile = false;
+        tradingProfiles = null;
         this.userId = response.getUserId();
         this.fullName = response.getFullName();
         this.email = response.getEmail();
@@ -47,12 +62,32 @@ public class SessionData {
         this.token = response.getToken();
     }
 
+    public void enablePreview() {
+        previewMode = true;
+        enterPreview();
+    }
+
+    public void enterPreview() {
+        if (!previewMode) throw new IllegalStateException("Preview is not enabled");
+        sellerProfile = false;
+        tradingProfiles = null;
+        userId = 1L;
+        fullName = null;
+        email = "preview@bidora.local";
+        role = UserRole.BIDDER;
+        token = "local-preview";
+    }
+
+    public boolean isPreviewMode() { return previewMode; }
+
     /**
      * Xóa sạch thông tin session khi người dùng đăng xuất.
      */
     public void setFullName(String fullName) { this.fullName = fullName; }
 
     public void clearSession() {
+        sellerProfile = false;
+        tradingProfiles = null;
         this.userId = null;
         this.fullName = null;
         this.email = null;
@@ -62,7 +97,7 @@ public class SessionData {
 
     // Các hàm Getter
     public Long getUserId() { return userId; }
-    public String getFullName() { return fullName; }
+    public String getFullName() { return previewMode && userId != null && fullName == null ? I18n.get("preview.account") : fullName; }
     public String getEmail() { return email; }
     public UserRole getRole() { return role; }
     public String getToken() { return token; }
@@ -71,8 +106,4 @@ public class SessionData {
         return token != null && !token.isEmpty();
     }
 
-    public void setSession(long l, String string, String string2, String string3, String string4) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setSession'");
-    }
 }

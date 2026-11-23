@@ -22,7 +22,7 @@ public class NavigationController {
     /**
      * Tải file FXML và hiển thị lên giao diện chính
      */
-    public static void showView(String fxmlPath, String title) {
+    public static void showView(String fxmlPath, String titleKey) {
         try {
             FXMLLoader loader = new FXMLLoader(NavigationController.class.getResource(fxmlPath), I18n.getBundle());
             Parent root = loader.load();
@@ -36,18 +36,16 @@ public class NavigationController {
                     scene.setRoot(root);
                 }
                 scene.getStylesheets().clear();
-                if (fxmlPath.contains("/fxml/browse/")) {
-                    scene.getStylesheets().add(NavigationController.class.getResource("/vn/edu/auction/client/css/browse.css").toExternalForm());
-                } else if (fxmlPath.contains("/fxml/auth/")) {
+                if (fxmlPath.contains("/fxml/auth/")) {
                     scene.getStylesheets().add(NavigationController.class.getResource("/vn/edu/auction/client/css/auth.css").toExternalForm());
                 }
                 vn.edu.auction.client.ui.UiTheme.apply(scene);
-                primaryStage.setTitle(title);
+                I18n.localize(primaryStage.titleProperty(), titleKey);
                 primaryStage.show();
             }
         } catch (IOException e) {
             e.printStackTrace();
-            System.err.println("Không thể tải view FXML: " + fxmlPath);
+            System.err.println("Khong the tai view FXML: " + fxmlPath);
         }
     }
 
@@ -55,20 +53,18 @@ public class NavigationController {
      * Chuyển sang màn hình Trang chủ[cite: 2].
      */
     public static void showHome() {
-        showView("/vn/edu/auction/client/fxml/home-view.fxml", "Trang Chủ - Hệ Thống Đấu Giá");
+        showBrowse();
     }
 
     public static void showBrowse() {
-        showView("/vn/edu/auction/client/fxml/browse/browse-view.fxml", "Sàn đấu giá | Khám phá");
+        showView("/vn/edu/auction/client/fxml/browse/browse-view.fxml", "title.explore");
     }
 
     public static void showProducts() {
         showBrowse();
-        if (primaryStage != null && primaryStage.getScene() != null
-                && primaryStage.getScene().getRoot() instanceof javafx.scene.layout.BorderPane pane
-                && pane.getCenter() instanceof javafx.scene.control.TabPane tabs
-                && tabs.getTabs().size() > 1) {
-            tabs.getSelectionModel().select(1);
+        if (primaryStage != null && primaryStage.getScene() != null) {
+            javafx.scene.Node node = primaryStage.getScene().lookup("#browseTabs");
+            if (node instanceof javafx.scene.control.TabPane tabs) tabs.getSelectionModel().select(1);
         }
     }
 
@@ -76,6 +72,6 @@ public class NavigationController {
      * Chuyển sang màn hình Đăng nhập[cite: 2].
      */
     public static void showLogin() {
-        showView("/vn/edu/auction/client/fxml/auth/login-view.fxml", I18n.get("title.login"));
+        showView("/vn/edu/auction/client/fxml/auth/login-view.fxml", "title.login");
     }
 }

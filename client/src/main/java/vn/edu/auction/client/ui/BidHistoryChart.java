@@ -1,5 +1,7 @@
 package vn.edu.auction.client.ui;
 
+import vn.edu.auction.client.I18n;
+
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -12,8 +14,6 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import vn.edu.auction.shared.dto.BidResponse;
@@ -33,32 +33,31 @@ public final class BidHistoryChart extends VBox {
                 .sorted(Comparator.comparing(BidResponse::getBidTime)
                         .thenComparing(BidResponse::getBidId, Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
-        Label title = new Label("Lịch sử đặt giá");
+        Label title = new Label(demo ? I18n.get("chart.sample") : I18n.get("chart.title"));
         title.getStyleClass().add("history-title");
-        Label badge = new Label(demo ? "MINH HỌA" : accepted.size() + " LƯỢT ĐẶT");
-        badge.getStyleClass().add("badge");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-        getChildren().add(new HBox(8, title, spacer, badge));
+        getChildren().add(title);
         if (accepted.isEmpty()) {
-            Label empty = new Label("Chưa có lượt đặt giá nào.");
+            Label empty = I18n.caption(new Label(), "chart.empty");
             empty.getStyleClass().add("history-empty");
             getChildren().add(empty);
             return;
         }
         BigDecimal unit = accepted.get(accepted.size() - 1).getAmount()
                 .compareTo(new BigDecimal("1000000")) >= 0 ? new BigDecimal("1000000") : new BigDecimal("1000");
+        LocalDateTime origin = startTime == null ? accepted.get(0).getBidTime() : startTime;
         NumberAxis timeAxis = new NumberAxis();
         timeAxis.setForceZeroInRange(true);
         timeAxis.setMinorTickVisible(false);
         timeAxis.setTickLabelFormatter(new StringConverter<>() {
-            @Override public String toString(Number value) { return TIME.format(startTime.plusSeconds(value.longValue())); }
+            @Override public String toString(Number value) {
+                return TIME.format(UiKit.toLocal(origin.plusSeconds(value.longValue())));
+            }
             @Override public Number fromString(String value) { throw new UnsupportedOperationException(); }
         });
         NumberAxis priceAxis = new NumberAxis();
         priceAxis.setForceZeroInRange(false);
         priceAxis.setMinorTickVisible(false);
-        priceAxis.setLabel(unit.intValue() == 1000000 ? "Giá (triệu đ)" : "Giá (nghìn đ)");
+        priceAxis.setLabel(unit.intValue() == 1000000 ? I18n.get("chart.millions") : I18n.get("chart.thousands"));
         LineChart<Number, Number> chart = new LineChart<>(timeAxis, priceAxis);
         chart.setAnimated(false);
         chart.setLegendVisible(false);
@@ -68,31 +67,49 @@ public final class BidHistoryChart extends VBox {
         chart.setVerticalGridLinesVisible(false);
         chart.getStyleClass().add("bid-history-chart");
         XYChart.Series<Number, Number> series = new XYChart.Series<>();
-        addPoint(series, startTime, startTime, startingPrice, unit, "Giá khởi điểm");
+        if (startingPrice != null && startTime != null) {
+            addPoint(series, origin, startTime, startingPrice, unit, I18n.get("item.startingPrice"), null);
+        }
         for (BidResponse bid : accepted) {
-            addPoint(series, startTime, bid.getBidTime(), bid.getAmount(), unit,
-                    "Người đặt #" + bid.getBidderId());
+            addPoint(series, origin, bid.getBidTime(), bid.getAmount(), unit,
+                    I18n.get("chart.bidder") + bid.getBidderId(), demo ? null : bid.getBidderId());
         }
         chart.getData().add(series);
         getChildren().add(chart);
-        Label hint = new Label(accepted.size() + " lượt đặt giá • Rê chuột vào điểm để xem giá và thời gian");
+        Label hint = new Label(I18n.get("chart.hint", accepted.size())
+                + (demo ? "" : I18n.get("chart.profileHint")));
         hint.getStyleClass().add("detail-note");
         hint.setWrapText(true);
         getChildren().add(hint);
     }
 
     private void addPoint(XYChart.Series<Number, Number> series, LocalDateTime start,
-                          LocalDateTime time, BigDecimal amount, BigDecimal unit, String title) {
+                          LocalDateTime time, BigDecimal amount, BigDecimal unit, String title, Long bidderId) {
         XYChart.Data<Number, Number> point = new XYChart.Data<>(
                 Duration.between(start, time).toMillis() / 1000.0,
                 amount.divide(unit).doubleValue());
-        String money = java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN")).format(amount);
-        String text = title + "\n" + money + " đ\n" + FULL_TIME.format(time);
-        point.nodeProperty().addListener((observable, oldNode, node) -> installTooltip(node, text));
+        String text = title + "\n" + UiKit.money(amount) + "\n" + FULL_TIME.format(UiKit.toLocal(time));
+        point.nodeProperty().addListener((observable, oldNode, node) -> {
+            installTooltip(node, text);
+            if (node != null && bidderId != null) {
+                node.setCursor(javafx.scene.Cursor.HAND);
+                node.setFocusTraversable(true);
+                Runnable open = () -> TradingProfileDialog.show(node.getScene().getWindow(), bidderId, false);
+                node.setOnMouseClicked(e -> open.run());
+                node.setOnKeyPressed(e -> {
+                    if (e.getCode() == javafx.scene.input.KeyCode.ENTER) { e.consume(); open.run(); }
+                });
+            }
+        });
         series.getData().add(point);
     }
 
     private void installTooltip(Node node, String text) {
-        if (node != null) Tooltip.install(node, new Tooltip(text));
+        if (node != null) {
+            if (!node.accessibleTextProperty().isBound()) {
+                node.setAccessibleText(text.replace('\n', ' '));
+            }
+            Tooltip.install(node, UiKit.tooltip(text));
+        }
     }
 }

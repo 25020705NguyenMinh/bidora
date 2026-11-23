@@ -1,5 +1,7 @@
 package vn.edu.auction.client.ui;
 
+import vn.edu.auction.client.I18n;
+
 import javafx.scene.control.Button;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
@@ -22,30 +24,67 @@ public final class UserArea {
         if (!s.isLoggedIn()) {
             UserSocketClient.getInstance().stop();
             ChatWindow.close();
-            Button login = new Button("Đăng nhập");
-            login.getStyleClass().add("outline-button");
+            Button login = I18n.caption(new Button(), "account.signIn");
+            login.setGraphic(new UiIcon(UiIcon.Kind.LOGIN));
+            login.getStyleClass().addAll("outline-button", "account-login");
             login.setOnAction(e -> BrowseController.openLogin((Stage) box.getScene().getWindow(), onChanged));
-            box.getChildren().add(login);
+            if (s.isPreviewMode()) {
+                I18n.localize(login.textProperty(), "preview.reopen");
+                login.setOnAction(e -> { s.enterPreview(); onChanged.run(); });
+            }
+            Button guestChat = new Button("", new UiIcon(UiIcon.Kind.CHAT));
+            guestChat.getStyleClass().add("outline-button");
+            guestChat.setId("guestChat");
+            guestChat.setTooltip(UiKit.localizedTooltip("chat.title"));
+            I18n.localize(guestChat.accessibleTextProperty(), "chat.title");
+            guestChat.setOnAction(e -> ChatWindow.toggle(box.getScene().getWindow()));
+            box.getChildren().addAll(new BellButton(), guestChat, login);
             return;
         }
 
-        UserSocketClient.getInstance().start(); // realtime thông báo + chat
+        if (!s.isPreviewMode()) UserSocketClient.getInstance().start();
 
-        Button chat = new Button("💬");
+        Button chat = new Button();
+        chat.setGraphic(new UiIcon(UiIcon.Kind.CHAT));
+        chat.setTooltip(UiKit.localizedTooltip("chat.title"));
+        I18n.localize(chat.accessibleTextProperty(), "chat.title");
         chat.getStyleClass().add("outline-button");
         chat.setOnAction(e -> ChatWindow.toggle(box.getScene().getWindow()));
 
-        MenuButton me = new MenuButton("👤 " + s.getFullName());
+        MenuButton me = new MenuButton(s.getFullName());
+        me.setMaxWidth(170);
+        me.setTooltip(UiKit.tooltip(s.getFullName()));
+        MenuItem switchProfile = new MenuItem();
+        switchProfile.setGraphic(new UiIcon(UiIcon.Kind.SWITCH));
+        switchProfile.setId("switchTradingProfile");
+        updateIdentity(me, switchProfile);
+        I18n.onChange(me, () -> updateIdentity(me, switchProfile));
+        switchProfile.setOnAction(event -> {
+            s.setSellerProfile(!s.isSellerProfile());
+            updateIdentity(me, switchProfile);
+            UiMotion.pulse(me.getGraphic());
+        });
+        Long avatarOwner = s.getUserId();
+        vn.edu.auction.client.api.FxAsync.run(new vn.edu.auction.client.api.UserApiClient()::tradingProfiles, profiles -> {
+            if (!java.util.Objects.equals(avatarOwner, SessionData.getInstance().getUserId())) return;
+            if (profiles.buyer() == null || profiles.seller() == null) return;
+            s.setTradingProfiles(profiles);
+            updateIdentity(me, switchProfile);
+        }, error -> { /* Keep the account icon when the deployed server lacks profiles. */ });
         me.getStyleClass().add("outline-button");
-        MenuItem wallet = new MenuItem("Ví");
-        MenuItem profile = new MenuItem("Thông tin tài khoản");
-        MenuItem logout = new MenuItem("Đăng xuất");
+        MenuItem wallet = I18n.menuItem("wallet.title");
+        wallet.setGraphic(new UiIcon(UiIcon.Kind.WALLET));
+        MenuItem profile = I18n.menuItem("account.details");
+        profile.setGraphic(new UiIcon(UiIcon.Kind.USER));
+        MenuItem logout = I18n.menuItem("account.signOut");
+        logout.setGraphic(new UiIcon(UiIcon.Kind.LOGOUT));
         wallet.setOnAction(e -> WalletDialog.show(box.getScene().getWindow()));
         profile.setOnAction(e -> ProfileDialog.show(box.getScene().getWindow(), onChanged));
         logout.setOnAction(e -> { ChatWindow.close(); s.clearSession(); onChanged.run(); });
-        me.getItems().addAll(wallet, profile);
+        me.getItems().addAll(wallet, profile, switchProfile);
         if (s.getRole() == UserRole.ADMIN) {
-            MenuItem admin = new MenuItem("Trang quản trị");
+            MenuItem admin = I18n.menuItem("admin.title");
+            admin.setGraphic(new UiIcon(UiIcon.Kind.SHIELD));
             admin.setOnAction(e -> AdminStage.show(box.getScene().getWindow()));
             me.getItems().add(admin);
         }
@@ -53,4 +92,22 @@ public final class UserArea {
 
         box.getChildren().addAll(new BellButton(), chat, me);
     }
+    private static void updateIdentity(MenuButton menu, MenuItem toggle) {
+        SessionData session = SessionData.getInstance();
+        var profiles = session.getTradingProfiles();
+        String name = session.getFullName();
+        String image = "";
+        boolean separate = profiles != null && profiles.separate();
+        toggle.setVisible(separate);
+        if (profiles != null) {
+            var active = session.isSellerProfile() ? profiles.seller() : profiles.buyer();
+            name = active.name();
+            image = active.avatar();
+        }
+        menu.setText(name);
+        menu.getTooltip().setText(name);
+        menu.setGraphic(TradingProfileDialog.avatar(image, 26));
+        I18n.localize(toggle.textProperty(), session.isSellerProfile() ? "profile.switchBuyer" : "profile.switchSeller");
+    }
+
 }
