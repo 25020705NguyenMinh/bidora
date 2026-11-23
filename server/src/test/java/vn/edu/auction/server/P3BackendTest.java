@@ -51,24 +51,32 @@ class P3BackendTest {
     @EntityScan("vn.edu.auction.server.entity")
     @EnableJpaRepositories("vn.edu.auction.server.repository")
     @Import({ItemService.class, AuctionService.class, BidService.class, AuctionUserService.class,
-            SocialService.class, UserSocketHandler.class, AuctionEventPublisher.class, AuctionClosingService.class, AuctionActivationService.class,
-            ItemController.class, AuctionController.class, BidController.class, TradingProfileService.class,
-            TradingProfileController.class, AuthService.class, OtpService.class, MailService.class, AuthController.class,
-            AuctionApiExceptionHandler.class, GlobalExceptionHandler.class, SecurityConfig.class, JwtService.class})
+        SocialService.class, UserSocketHandler.class, AuctionEventPublisher.class, AuctionClosingService.class, AuctionActivationService.class,
+        ItemController.class, AuctionController.class, BidController.class, TradingProfileService.class,
+        TradingProfileController.class, AuthService.class, OtpService.class, MailService.class, AuthController.class,
+        AuctionApiExceptionHandler.class, GlobalExceptionHandler.class, SecurityConfig.class, JwtService.class})
     static class TestApp {
         @Bean MutableClock auctionClock() { return new MutableClock(); }
         @Bean EventCollector eventCollector() { return new EventCollector(); }
-        @Bean TestMailbox testMailbox() { return new TestMailbox(); }
+        @Bean @Primary TestMailbox testMailbox() { return new TestMailbox(); }
     }
 
-    static class TestMailbox extends org.springframework.mail.javamail.JavaMailSenderImpl {
+    static class TestMailbox extends MailService {
         boolean unavailable;
         String code;
-        @Override public void send(org.springframework.mail.SimpleMailMessage message) {
-            if (unavailable) throw new org.springframework.mail.MailSendException("Test transport unavailable");
-            var matcher = java.util.regex.Pattern.compile("[0-9]{6}").matcher(message.getText());
-            assertTrue(matcher.find());
-            code = matcher.group();
+
+        TestMailbox() {
+            super("test-api-key", "no-reply@test.local", "Tech Auction", new com.fasterxml.jackson.databind.ObjectMapper());
+        }
+
+        @Override
+        public void sendOtp(String to, String otpCode, long expirationMinutes) {
+            if (unavailable) {
+                throw new EmailSendException(new IllegalStateException("Test transport unavailable"));
+            }
+            assertNotNull(otpCode);
+            assertTrue(otpCode.matches("[0-9]{6}"));
+            this.code = otpCode;
         }
     }
 
