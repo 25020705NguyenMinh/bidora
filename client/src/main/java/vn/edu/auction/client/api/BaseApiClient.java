@@ -38,8 +38,12 @@ public abstract class BaseApiClient {
 
     /** type == null: không cần đọc body (DELETE, 204...). */
     protected <T> T call(String method, String path, Object body, TypeReference<T> type) throws ApiException {
+        return call(method, path, body, type, REQUEST_TIMEOUT);
+    }
+
+    protected <T> T call(String method, String path, Object body, TypeReference<T> type, Duration timeout) throws ApiException {
         HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(BASE_URL + path))
-                .timeout(REQUEST_TIMEOUT).header("Accept", "application/json");
+            .timeout(timeout).header("Accept", "application/json");    //mặc định trả về JSON, phải nhận timeout vì server có thể chậm
         String token = SessionData.getInstance().getToken();
         if (token != null && !token.isBlank()) b.header("Authorization", "Bearer " + token);
 

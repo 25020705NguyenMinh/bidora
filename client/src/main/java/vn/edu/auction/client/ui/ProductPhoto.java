@@ -31,7 +31,6 @@ public final class ProductPhoto {
                 if (!"PNG".equalsIgnoreCase(format) && !"JPEG".equalsIgnoreCase(format)) throw new java.io.IOException("Invalid format");
                 reader.setInput(input);
                 int largest = Math.max(reader.getWidth(0), reader.getHeight(0));
-                reader.setInput(input);
                 var params = reader.getDefaultReadParam();
                 int sample = Math.max(1, (largest + 1279) / 1280);
                 params.setSourceSubsampling(sample, sample, 0, 0);
