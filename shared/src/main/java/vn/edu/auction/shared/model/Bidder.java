@@ -1,5 +1,6 @@
 package vn.edu.auction.shared.model;
 
+import java.util.Set;
 import vn.edu.auction.shared.enums.UserRole;
 import vn.edu.auction.shared.enums.UserStatus;
 
@@ -10,11 +11,16 @@ public class Bidder extends User {
     }
 
     public Bidder() {
-        super(null, null, null, UserRole.BIDDER, null);
+        this(null, null, null, null);
     }
 
-    @Override public java.util.Set<UserRole> permissions() {
+    @Override
+    public Set<UserRole> permissions() {
         return TRADING;
     }
 
+    @Override
+    public String printInfo() {
+        return "Bidder " + super.printInfo() + " - tham gia đặt giá";
+    }
 }
