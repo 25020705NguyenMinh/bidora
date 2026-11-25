@@ -46,8 +46,26 @@ public abstract class BaseApiClient {
             } else {
                 b.method(method, HttpRequest.BodyPublishers.noBody());
             }
-            HttpResponse<String> res = HTTP.send(b.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+            HttpResponse<String> res = HTTP.send(
+                b.build(),
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+            );
+
             int status = res.statusCode();
+
+// DEBUG: chỉ in trạng thái token, tuyệt đối không in nội dung token
+            System.out.println(
+                "[API DEBUG] " + method + " " + path
+                    + " | tokenPresent="
+                    + (token != null && !token.isBlank())
+                    + " | HTTP " + status
+            );
+
+            if (status == 401 || status == 403) {
+                System.err.println("[API DEBUG] Response: " + res.body());
+            }
+
             if (status >= 200 && status < 300) {
                 if (type == null || res.body() == null || res.body().isBlank()) return null;
                 return MAPPER.readValue(res.body(), type);
