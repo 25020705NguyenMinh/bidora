@@ -93,6 +93,7 @@ public class ItemService {
                 || price.compareTo(item.getStartingPrice()) != 0)) {
             item.setStatus(ItemStatus.DRAFT);
         }
+        item.setCategory(request.getCategory() == null ? item.getCategory() : request.getCategory());
         item.setImage(image);
         item.setName(name);
         item.setDescription(description);
@@ -102,6 +103,7 @@ public class ItemService {
     private ItemResponse response(ItemEntity item) {
         ItemResponse resp = new ItemResponse(item.getId(), item.getSellerId(), item.getName(), item.getDescription(), item.getStartingPrice(), item.getStatus());
         resp.setImage(item.getImage());
+        resp.setCategory(item.getCategory());
         auctions.findByItemId(item.getId()).ifPresent(a -> resp.setAuctionStatus(a.getStatus()));
         return resp;
     }

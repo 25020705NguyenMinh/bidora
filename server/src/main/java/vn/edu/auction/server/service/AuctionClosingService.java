@@ -16,6 +16,7 @@ import vn.edu.auction.server.repository.ItemRepository;
 import vn.edu.auction.shared.enums.AuctionStatus;
 import vn.edu.auction.shared.enums.BidStatus;
 import vn.edu.auction.shared.enums.ItemStatus;
+import vn.edu.auction.server.entity.UserEntity;
 
 /** Tự đóng các phiên đã hết hạn: chọn người thắng, chuyển FINISHED, phát AUCTION_FINISHED. */
 @Service
@@ -29,10 +30,11 @@ public class AuctionClosingService {
     private final SocialService social;
     private final Clock clock;
     private final TransactionTemplate tx;
+    private final AuctionUserService users;
 
     public AuctionClosingService(AuctionRepository auctions, ItemRepository items, BidTransactionRepository bids,
                                  AuctionEventPublisher publisher, SocialService social, Clock auctionClock,
-                                 PlatformTransactionManager txManager) {
+                                 PlatformTransactionManager txManager,AuctionUserService users) {
         this.auctions = auctions;
         this.items = items;
         this.bids = bids;
@@ -41,6 +43,7 @@ public class AuctionClosingService {
         this.clock = auctionClock;
         // Mỗi phiên đóng trong 1 transaction riêng: 1 phiên lỗi không kéo theo phiên khác
         this.tx = new TransactionTemplate(txManager);
+        this.users = users;
     }
 
     /** Trả về số phiên thực sự vừa được đóng. */
@@ -88,9 +91,12 @@ public class AuctionClosingService {
         auctions.save(auction);
 
         publisher.publishAuctionFinished(auction); // chỉ thật sự gửi sau khi commit
-        social.onAuctionEnded(auction, auction.getHighestBidderId() == null
-                ? "đã kết thúc, không có người thắng."
-                : "đã kết thúc. Người thắng: #" + auction.getHighestBidderId());
+        Long winnerId = auction.getHighestBidderId();
+        social.onAuctionEnded(auction, winnerId == null
+            ? "đã kết thúc, không có người thắng."
+            : "đã kết thúc. Người thắng: " + users.findById(winnerId)
+            .map(UserEntity::getFullName).filter(n -> !n.isBlank()).orElse("#" + winnerId));
+
         return true;
     }
 }

@@ -120,6 +120,7 @@ public class AdminService {
                     var dto = new ItemResponse(i.getId(), i.getSellerId(), i.getName(), i.getDescription(),
                             i.getStartingPrice(), i.getStatus(), a != null ? a.getStatus() : null);
                     dto.setImage(i.getImage());
+                    dto.setCategory(i.getCategory());
                     return dto;
                 }).toList();
         log.info("AdminService.allItems - after filter REMOVED: {}", result.size());
@@ -132,6 +133,7 @@ public class AdminService {
                 .map(i -> {
                     var dto = new ItemResponse(i.getId(), i.getSellerId(), i.getName(), i.getDescription(), i.getStartingPrice(), i.getStatus());
                     dto.setImage(i.getImage());
+                    dto.setCategory(i.getCategory());
                     return dto;
                 }).toList();
     }

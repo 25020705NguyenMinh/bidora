@@ -76,6 +76,7 @@ public class AuctionService {
                 auction.getCurrentPrice(), auction.getHighestBidderId(), auction.getStartTime(), auction.getEndTime(), auction.getStatus());
         result.setImage(item.getImage());
         result.setSellerId(item.getSellerId());
+        result.setCategory(item.getCategory());
         if (auction.getHighestBidderId() != null) {
             result.setHighestBidderName(users.findById(auction.getHighestBidderId())
                 .map(UserEntity::getFullName).orElse(null));
