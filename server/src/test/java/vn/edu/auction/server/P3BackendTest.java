@@ -34,6 +34,12 @@ import vn.edu.auction.shared.enums.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+@Import({ItemService.class, AuctionService.class, BidService.class, AutoBidService.class, AuctionUserService.class,
+    SocialService.class, UserSocketHandler.class, AuctionEventPublisher.class, AuctionClosingService.class, AuctionActivationService.class,
+    ItemController.class, AuctionController.class, BidController.class, TradingProfileService.class,
+    TradingProfileController.class, AuthService.class, OtpService.class, MailService.class, AuthController.class,
+    AuctionApiExceptionHandler.class, GlobalExceptionHandler.class, SecurityConfig.class, JwtService.class})
+
 
 @SpringBootTest(classes = P3BackendTest.TestApp.class, properties = {
         "spring.datasource.url=${P3_TEST_DB_URL:jdbc:h2:mem:p3;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000}",
