@@ -9,7 +9,9 @@ public class AuctionResponse {
     private String image;
     public String getImage() { return image; }
     public void setImage(String image) { this.image = image; }
-
+    private String highestBidderName;
+    public String getHighestBidderName() { return highestBidderName; }
+    public void setHighestBidderName(String highestBidderName) { this.highestBidderName = highestBidderName; }
 
     private Long id;
     private Long itemId;

@@ -21,6 +21,9 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import vn.edu.auction.client.api.AutoBidApiClient;
+import vn.edu.auction.shared.dto.AutoBidRequest;
+import vn.edu.auction.shared.dto.AutoBidResponse;
 
 import vn.edu.auction.client.ui.MarketCard;
 import vn.edu.auction.client.api.AuctionApiClient;
@@ -41,6 +44,7 @@ public class AuctionListController extends CatalogController {
     private final ObservableList<AuctionResponse> auctions = FXCollections.observableArrayList();
     private final AuctionApiClient auctionApi = new AuctionApiClient();
     private final BidApiClient bidApi = new BidApiClient();
+    private final AutoBidApiClient autoBidApi = new AutoBidApiClient();
     private static Runnable reloadHook = () -> { };
     private Runnable unsubscribe;
     private final Map<Long, MarketCard> visibleCards = new HashMap<>();
@@ -196,7 +200,8 @@ public class AuctionListController extends CatalogController {
             if (notStarted) starts.setText(I18n.get("auction.startsPrefix", UiKit.dt(a.getStartTime()))
                     + " · " + I18n.get("auction.startsIn", countdown(a)));
             price.setText(UiKit.money(a.getCurrentPrice()));
-            leader.setText(I18n.get("auction.leader", a.getHighestBidderId() == null ? "—" : "#" + a.getHighestBidderId()));
+            leader.setText(I18n.get("auction.leader", a.getHighestBidderId() == null ? "—"
+                : a.getHighestBidderName() != null ? a.getHighestBidderName() : "#" + a.getHighestBidderId()));
             leader.setDisable(a.getHighestBidderId() == null);
             end.setText(I18n.get("auction.ends", UiKit.dt(a.getEndTime())));
             bidRow.setDisable(!live); // phiên chưa bắt đầu: xem được sản phẩm nhưng chưa đặt giá
@@ -212,6 +217,14 @@ public class AuctionListController extends CatalogController {
                 historyHolder.getChildren().setAll(new BidHistoryChart(selected.getStartingPrice(), selected.getStartTime(), list, false)),
                 err -> I18n.track(note.textProperty(), () -> BaseApiClient.describe(err)));
         loadHistory.run();
+        Runnable refreshLeaderName = () -> {
+            if (SessionData.getInstance().isPreviewMode()) return;
+            FxAsync.run(() -> auctionApi.getAuctionById(selected.getId()), fresh -> {
+                selected.setHighestBidderName(fresh.getHighestBidderName());
+                render.accept(selected);
+            }, err -> { });
+        };
+        refreshLeaderName.run();
 
         bidButton.setOnAction(e -> {
             if (!SessionData.getInstance().isLoggedIn()) {
@@ -243,6 +256,7 @@ public class AuctionListController extends CatalogController {
                         if (SessionData.getInstance().isPreviewMode()) {
                             selected.setCurrentPrice(res.getAmount());
                             selected.setHighestBidderId(res.getBidderId());
+                            selected.setHighestBidderName(null);
                             render.accept(selected);
                             MarketCard card = visibleCards.get(selected.getId());
                             if (card != null) card.updateQuote(status(effective(selected)),
@@ -251,19 +265,99 @@ public class AuctionListController extends CatalogController {
                             if (index >= 0) auctions.set(index, selected);
                         }
                         loadHistory.run();
+
+
                     },
                     err -> { bidButton.setDisable(false); I18n.track(note.textProperty(), () -> BaseApiClient.describe(err)); });
         });
+        // ===== Đấu giá tự động (maxBid + bước giá) =====
+        TextField maxBidField = new TextField();
+        I18n.localize(maxBidField.promptTextProperty(), "auction.auto.maxPrompt");
+        TextField incrementField = new TextField();
+        I18n.localize(incrementField.promptTextProperty(), "auction.auto.incPrompt");
+        HBox.setHgrow(maxBidField, Priority.ALWAYS);
+        HBox.setHgrow(incrementField, Priority.ALWAYS);
+        Button autoButton = I18n.caption(new Button(), "auction.auto.enable");
+        autoButton.getStyleClass().add("primary-button");
+        Button autoCancelButton = I18n.caption(new Button(), "auction.auto.disable");
+        autoCancelButton.getStyleClass().add("outline-button");
+        autoCancelButton.setVisible(false);
+        autoCancelButton.setManaged(false);
+        Label autoStatus = new Label();
+        autoStatus.setWrapText(true);
+        HBox autoRow = new HBox(8, maxBidField, incrementField, autoButton, autoCancelButton);
+        autoRow.setAlignment(Pos.CENTER_LEFT);
+        VBox autoBox = new VBox(6, autoRow, autoStatus);
+        // Khóa/mở cùng ô đặt giá thường (render() đã setDisable cho bidRow theo trạng thái phiên)
+        autoBox.disableProperty().bind(bidRow.disableProperty());
+        if (SessionData.getInstance().isPreviewMode()) { // PreviewServer không có API auto-bid
+            autoBox.setVisible(false);
+            autoBox.setManaged(false);
+        }
 
+        java.util.function.Consumer<AutoBidResponse> showAuto = ab -> {
+            boolean on = ab != null && ab.isActive();
+            autoCancelButton.setVisible(on);
+            autoCancelButton.setManaged(on);
+            if (on) I18n.localize(autoStatus.textProperty(), "auction.auto.status",
+                UiKit.money(ab.getMaxBid()), UiKit.money(ab.getIncrement()));
+            else I18n.track(autoStatus.textProperty(), () -> "");
+        };
+        Runnable refreshAuto = () -> {
+            if (!SessionData.getInstance().isLoggedIn() || SessionData.getInstance().isPreviewMode()) return;
+            FxAsync.run(() -> autoBidApi.getMine(selected.getId()), showAuto, err -> { });
+        };
+        refreshAuto.run();
+
+        autoButton.setOnAction(e -> {
+            if (!SessionData.getInstance().isLoggedIn()) {
+                I18n.localize(autoStatus.textProperty(), "auction.auto.needLogin");
+                return;
+            }
+            BigDecimal max;
+            BigDecimal inc;
+            try {
+                max = new BigDecimal(maxBidField.getText().trim());
+                inc = new BigDecimal(incrementField.getText().trim());
+            } catch (NumberFormatException ex) {
+                I18n.localize(autoStatus.textProperty(), "auction.auto.invalid");
+                return;
+            }
+            autoButton.setDisable(true);
+            FxAsync.run(() -> autoBidApi.register(selected.getId(), new AutoBidRequest(max, inc)),
+                res -> {
+                    autoButton.setDisable(false);
+                    maxBidField.clear();
+                    incrementField.clear();
+                    showAuto.accept(res);
+                    loadHistory.run();
+                },
+                err -> {
+                    autoButton.setDisable(false);
+                    I18n.track(autoStatus.textProperty(), () -> BaseApiClient.describe(err));
+                });
+        });
+
+        autoCancelButton.setOnAction(e -> FxAsync.run(
+            () -> { autoBidApi.cancel(selected.getId()); return Boolean.TRUE; },
+            ok -> showAuto.accept(null),
+            err -> I18n.track(autoStatus.textProperty(), () -> BaseApiClient.describe(err))));
+
+        // Realtime trong dialog: giá, người dẫn đầu, giờ kết thúc (gia hạn chống sniping), lịch sử bid
         // Realtime trong dialog: giá, người dẫn đầu, giờ kết thúc (gia hạn chống sniping), lịch sử bid
         Runnable unsub = !SessionData.getInstance().isLoggedIn() || SessionData.getInstance().isPreviewMode() ? () -> {} : AuctionRealtimeClient.getInstance().subscribe(ev -> {
             if (!selected.getId().equals(ev.auctionId())) return;
+            if (!java.util.Objects.equals(selected.getHighestBidderId(), ev.highestBidderId())) {
+                selected.setHighestBidderName(null);   // đổi người dẫn đầu: bỏ tên cũ
+            }                                           // <-- dấu } bị thiếu
             selected.setCurrentPrice(ev.currentPrice());
             selected.setHighestBidderId(ev.highestBidderId());
             selected.setStatus(ev.status());
             selected.setEndTime(ev.endTime());
             render.accept(selected);
             loadHistory.run();
+            refreshAuto.run();
+            refreshLeaderName.run();
         });
         // Đếm ngược trong hộp thoại: tới giờ thì tự mở ô đặt giá, không cần tải lại
         Timeline dialogTicker = new Timeline(new KeyFrame(javafx.util.Duration.seconds(1), e -> {
@@ -281,7 +375,7 @@ public class AuctionListController extends CatalogController {
         HBox.setHgrow(overview, Priority.ALWAYS);
         HBox summary = new HBox(20, photo, overview);
         VBox content = new VBox(16, summary, new WatchBar(selected.getId(), selected.getItemId()),
-                bidRow, historyHolder, note);
+            bidRow, autoBox, historyHolder, note);
         content.getStyleClass().add("detail-content");
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
