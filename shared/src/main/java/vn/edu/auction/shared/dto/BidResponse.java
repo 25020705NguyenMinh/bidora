@@ -14,6 +14,10 @@ public class BidResponse {
     private LocalDateTime bidTime;
     private BidStatus status;
     private String message;
+    private String bidderName;
+
+    public String getBidderName() { return bidderName; }
+    public void setBidderName(String bidderName) { this.bidderName = bidderName; }
 
     public BidResponse(Long bidId, Long auctionId, Long bidderId, BigDecimal amount, LocalDateTime bidTime, BidStatus status, String message){
         this.bidId = bidId;

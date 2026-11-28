@@ -82,7 +82,13 @@ public class BidService {
 
     public List<BidResponse> getBidHistory(Long auctionId) {
         AuctionRules.require(auctions.existsByIdAndHiddenFalse(auctionId), HttpStatus.NOT_FOUND, "Không tìm thấy phiên đấu giá.");
-        return bids.findByAuctionIdOrderByBidTimeDescIdDesc(auctionId).stream().map(this::response).toList();
+        java.util.Map<Long, String> names = new java.util.HashMap<>(); // mỗi người chỉ tra 1 lần
+        return bids.findByAuctionIdOrderByBidTimeDescIdDesc(auctionId).stream().map(b -> {
+            BidResponse r = response(b);
+            r.setBidderName(names.computeIfAbsent(b.getBidderId(),
+                id -> users.findById(id).map(UserEntity::getFullName).orElse(null)));
+            return r;
+        }).toList();
     }
 
     

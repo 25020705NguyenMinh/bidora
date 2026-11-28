@@ -200,7 +200,8 @@ public class AuctionListController extends CatalogController {
             if (notStarted) starts.setText(I18n.get("auction.startsPrefix", UiKit.dt(a.getStartTime()))
                     + " · " + I18n.get("auction.startsIn", countdown(a)));
             price.setText(UiKit.money(a.getCurrentPrice()));
-            leader.setText(I18n.get("auction.leader", a.getHighestBidderId() == null ? "—" : "#" + a.getHighestBidderId()));
+            leader.setText(I18n.get("auction.leader", a.getHighestBidderId() == null ? "—"
+                : a.getHighestBidderName() != null ? a.getHighestBidderName() : "#" + a.getHighestBidderId()));
             leader.setDisable(a.getHighestBidderId() == null);
             end.setText(I18n.get("auction.ends", UiKit.dt(a.getEndTime())));
             bidRow.setDisable(!live); // phiên chưa bắt đầu: xem được sản phẩm nhưng chưa đặt giá
@@ -216,6 +217,14 @@ public class AuctionListController extends CatalogController {
                 historyHolder.getChildren().setAll(new BidHistoryChart(selected.getStartingPrice(), selected.getStartTime(), list, false)),
                 err -> I18n.track(note.textProperty(), () -> BaseApiClient.describe(err)));
         loadHistory.run();
+        Runnable refreshLeaderName = () -> {
+            if (SessionData.getInstance().isPreviewMode()) return;
+            FxAsync.run(() -> auctionApi.getAuctionById(selected.getId()), fresh -> {
+                selected.setHighestBidderName(fresh.getHighestBidderName());
+                render.accept(selected);
+            }, err -> { });
+        };
+        refreshLeaderName.run();
 
         bidButton.setOnAction(e -> {
             if (!SessionData.getInstance().isLoggedIn()) {
@@ -247,6 +256,7 @@ public class AuctionListController extends CatalogController {
                         if (SessionData.getInstance().isPreviewMode()) {
                             selected.setCurrentPrice(res.getAmount());
                             selected.setHighestBidderId(res.getBidderId());
+                            selected.setHighestBidderName(null);
                             render.accept(selected);
                             MarketCard card = visibleCards.get(selected.getId());
                             if (card != null) card.updateQuote(status(effective(selected)),
@@ -255,6 +265,7 @@ public class AuctionListController extends CatalogController {
                             if (index >= 0) auctions.set(index, selected);
                         }
                         loadHistory.run();
+
 
                     },
                     err -> { bidButton.setDisable(false); I18n.track(note.textProperty(), () -> BaseApiClient.describe(err)); });
@@ -333,8 +344,12 @@ public class AuctionListController extends CatalogController {
             err -> I18n.track(autoStatus.textProperty(), () -> BaseApiClient.describe(err))));
 
         // Realtime trong dialog: giá, người dẫn đầu, giờ kết thúc (gia hạn chống sniping), lịch sử bid
+        // Realtime trong dialog: giá, người dẫn đầu, giờ kết thúc (gia hạn chống sniping), lịch sử bid
         Runnable unsub = !SessionData.getInstance().isLoggedIn() || SessionData.getInstance().isPreviewMode() ? () -> {} : AuctionRealtimeClient.getInstance().subscribe(ev -> {
             if (!selected.getId().equals(ev.auctionId())) return;
+            if (!java.util.Objects.equals(selected.getHighestBidderId(), ev.highestBidderId())) {
+                selected.setHighestBidderName(null);   // đổi người dẫn đầu: bỏ tên cũ
+            }                                           // <-- dấu } bị thiếu
             selected.setCurrentPrice(ev.currentPrice());
             selected.setHighestBidderId(ev.highestBidderId());
             selected.setStatus(ev.status());
@@ -342,6 +357,7 @@ public class AuctionListController extends CatalogController {
             render.accept(selected);
             loadHistory.run();
             refreshAuto.run();
+            refreshLeaderName.run();
         });
         // Đếm ngược trong hộp thoại: tới giờ thì tự mở ô đặt giá, không cần tải lại
         Timeline dialogTicker = new Timeline(new KeyFrame(javafx.util.Duration.seconds(1), e -> {
