@@ -12,6 +12,7 @@ import vn.edu.auction.server.entity.AuctionEntity;
 import vn.edu.auction.server.event.AuctionEventPublisher;
 import vn.edu.auction.server.repository.AuctionRepository;
 import vn.edu.auction.shared.enums.AuctionStatus;
+import vn.edu.auction.shared.model.Auction;
 
 /**
  * Tự kích hoạt các phiên đã lên lịch: tới giờ bắt đầu thì OPEN -> RUNNING và phát AUCTION_STARTED.
@@ -59,7 +60,7 @@ public class AuctionActivationService {
         if (auction == null || auction.getStatus() != AuctionStatus.OPEN) return false; // đã có người xử lý
         LocalDateTime now = LocalDateTime.now(clock);
         if (now.isBefore(auction.getStartTime()) || !now.isBefore(auction.getEndTime())) return false;
-        auction.setStatus(AuctionStatus.RUNNING);
+        auction.transition(Auction::start);
         auctions.save(auction);
         publisher.publishAuctionStarted(auction); // chỉ thật sự gửi sau khi commit
         return true;

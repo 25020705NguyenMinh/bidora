@@ -16,9 +16,6 @@ import vn.edu.auction.server.repository.*;
 import vn.edu.auction.shared.dto.AutoBidRequest;
 import vn.edu.auction.shared.dto.AutoBidResponse;
 import vn.edu.auction.shared.enums.*;
-import vn.edu.auction.server.exception.AuctionBusinessException;
-import vn.edu.auction.shared.model.Auction;
-import vn.edu.auction.shared.model.BidRejectedException;
 
 @Service
 @Transactional
@@ -33,18 +30,18 @@ public class AutoBidService {
 
     private final AuctionRepository auctions;
     private final ItemRepository items;
-    private final BidTransactionRepository bids;
+    private final BidRecorder recorder;
     private final AutoBidRepository autoBids;
     private final AuctionUserService users;
     private final ApplicationEventPublisher events;
     private final Clock clock;
 
-    public AutoBidService(AuctionRepository auctions, ItemRepository items, BidTransactionRepository bids,
+    public AutoBidService(AuctionRepository auctions, ItemRepository items, BidRecorder recorder,
                           AutoBidRepository autoBids, AuctionUserService users,
                           ApplicationEventPublisher events, Clock auctionClock) {
         this.auctions = auctions;
         this.items = items;
-        this.bids = bids;
+        this.recorder = recorder;
         this.autoBids = autoBids;
         this.users = users;
         this.events = events;
@@ -60,8 +57,8 @@ public class AutoBidService {
         AuctionRules.require(!item.getSellerId().equals(bidderId), HttpStatus.FORBIDDEN,
                 "Không được đấu giá tự động sản phẩm của mình.");
         LocalDateTime now = LocalDateTime.now(clock);
-        AuctionRules.require(toDomain(auction).isAcceptingBids(now), HttpStatus.CONFLICT,
-            "Phiên chưa mở hoặc đã kết thúc.");
+        AuctionRules.require(auction.toDomain().isAcceptingBids(now), HttpStatus.CONFLICT,
+                "Phiên chưa mở hoặc đã kết thúc.");
         AuctionRules.require(request != null, HttpStatus.BAD_REQUEST, "Thiếu giá tối đa hoặc bước giá.");
         BigDecimal max = AuctionRules.money(request.getMaxBid());
         BigDecimal inc = AuctionRules.money(request.getIncrement());
@@ -142,31 +139,9 @@ public class AutoBidService {
     }
 
     private void placeAutoBid(AuctionEntity auction, Long bidderId, BigDecimal amount, LocalDateTime now) {
-        Auction domain = toDomain(auction);
-        try {
-            // Cùng luật với bid tay: giá phải cao hơn, phiên đang mở, gia hạn chống sniping
-            domain.placeBid(bidderId, amount, now);
-        } catch (BidRejectedException e) {
-            throw new AuctionBusinessException(HttpStatus.CONFLICT, e.getMessage());
-        }
-        auction.setEndTime(domain.getEndTime());
-        auction.setStatus(domain.getStatus());
-        auction.setCurrentPrice(domain.getCurrentPrice());
-        auction.setHighestBidderId(domain.getHighestBidderId());
-
-        BidTransactionEntity bid = new BidTransactionEntity();
-        bid.setAuctionId(auction.getId());
-        bid.setBidderId(bidderId);
-        bid.setAmount(amount);
-        bid.setBidTime(now);
-        bid.setStatus(BidStatus.ACCEPTED);
-        bids.saveAndFlush(bid);
+        recorder.place(auction, bidderId, amount, now);
     }
 
-    private static Auction toDomain(AuctionEntity a) {
-        return new Auction(a.getId(), a.getItemId(), a.getCurrentPrice(), a.getHighestBidderId(),
-            a.getStartTime(), a.getEndTime(), a.getStatus());
-    }
 
     private AutoBidResponse response(AutoBidEntity ab) {
         return new AutoBidResponse(ab.getId(), ab.getAuctionId(), ab.getBidderId(), ab.getMaxBid(),

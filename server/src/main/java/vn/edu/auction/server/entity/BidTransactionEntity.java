@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import vn.edu.auction.shared.enums.*;
+import vn.edu.auction.shared.model.BidTransaction;
 
 @Entity
 @Table(name = "bids")
@@ -43,4 +44,16 @@ public class BidTransactionEntity {
 
     public BidStatus getStatus() { return status; }
     public void setStatus(BidStatus status) { this.status = status; }
+
+
+    //Static Factory Method để khởi tạo đối tượng(tránh trùng tên method với class)
+    public static BidTransactionEntity from(BidTransaction bid) {
+        BidTransactionEntity entity = new BidTransactionEntity();
+        entity.auctionId = bid.getAuctionId();
+        entity.bidderId = bid.getBidderId();
+        entity.amount = bid.getAmount();
+        entity.bidTime = bid.getBidTime();
+        entity.status = bid.getStatus();
+        return entity;
+    }
 }

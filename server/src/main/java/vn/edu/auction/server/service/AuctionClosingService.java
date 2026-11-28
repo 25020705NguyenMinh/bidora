@@ -16,6 +16,7 @@ import vn.edu.auction.server.repository.ItemRepository;
 import vn.edu.auction.shared.enums.AuctionStatus;
 import vn.edu.auction.shared.enums.BidStatus;
 import vn.edu.auction.shared.enums.ItemStatus;
+import vn.edu.auction.shared.model.Auction;
 
 /** Tự đóng các phiên đã hết hạn: chọn người thắng, chuyển FINISHED, phát AUCTION_FINISHED. */
 @Service
@@ -70,8 +71,9 @@ public class AuctionClosingService {
 
         // Sau khi có khóa mới kiểm tra lại: phiên đã đóng bởi tiến trình khác => bỏ qua
         if (auction.getStatus() != AuctionStatus.OPEN && auction.getStatus() != AuctionStatus.RUNNING) return false;
+        LocalDateTime now = LocalDateTime.now(clock);
         // Bid cuối có thể vừa gia hạn endTime (anti-sniping) => chưa hết hạn thật
-        if (LocalDateTime.now(clock).isBefore(auction.getEndTime())) return false;
+        if (now.isBefore(auction.getEndTime())) return false;
 
         // Người thắng + giá cuối lấy từ dữ liệu bid ĐÃ LƯU, không tin giá trong bộ nhớ
         bids.findFirstByAuctionIdAndStatusOrderByAmountDescIdAsc(auctionId, BidStatus.ACCEPTED)
@@ -84,7 +86,7 @@ public class AuctionClosingService {
                 });
             }, () -> auction.setHighestBidderId(null)); // không có bid => không có người thắng
 
-        auction.setStatus(AuctionStatus.FINISHED); // KHÔNG tự chuyển PAID
+        auction.transition(a -> a.finish(now)); // PAID chỉ khi người thắng thanh toán (AuctionPaymentService)
         auctions.save(auction);
 
         publisher.publishAuctionFinished(auction); // chỉ thật sự gửi sau khi commit

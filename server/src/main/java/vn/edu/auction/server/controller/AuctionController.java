@@ -6,13 +6,19 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import vn.edu.auction.server.service.AuctionService;
 import vn.edu.auction.shared.dto.*;
+import vn.edu.auction.server.service.AuctionPaymentService;
+import vn.edu.auction.shared.dto.ExtraDto.WalletResponse;
 
 @RestController
 @RequestMapping("/api/auctions")
 public class AuctionController {
     private final AuctionService auctions;
+    private final AuctionPaymentService payments;
 
-    public AuctionController(AuctionService auctions) { this.auctions = auctions; }
+    public AuctionController(AuctionService auctions, AuctionPaymentService payments) {
+        this.auctions = auctions;
+        this.payments = payments;
+    }
 
     @GetMapping
     public List<AuctionResponse> getAllAuctions() { return auctions.getAllAuctions(); }
@@ -24,5 +30,10 @@ public class AuctionController {
     @ResponseStatus(HttpStatus.CREATED)
     public AuctionResponse createAuction(@RequestBody AuctionRequest request, Authentication auth) {
         return auctions.createAuction(request, AuctionPrincipal.userId(auth));
+    }
+
+    @PostMapping("/{id}/pay")
+    public WalletResponse pay(@PathVariable("id") Long id, Authentication auth) {
+        return payments.pay(id, AuctionPrincipal.userId(auth));
     }
 }

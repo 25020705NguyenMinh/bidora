@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import vn.edu.auction.shared.enums.*;
+import java.util.function.Consumer;
+import vn.edu.auction.shared.model.Auction;
 
 @Entity
 @Table(name = "auctions")
@@ -56,4 +58,24 @@ public class AuctionEntity {
 
     public boolean isHidden() { return hidden; }
     public void setHidden(boolean hidden) { this.hidden = hidden; }
+
+    /** Dựng đối tượng domain từ dữ liệu đang lưu; mọi quy tắc đấu giá nằm ở {@link Auction}. */
+    public Auction toDomain() {
+        return new Auction(id, itemId, currentPrice, highestBidderId, startTime, endTime, status);
+    }
+
+    /** Ghi lại phần trạng thái có thể thay đổi của domain (giá, người dẫn đầu, hạn chót, trạng thái). */
+    public void applyFrom(Auction domain) {
+        this.currentPrice = domain.getCurrentPrice();
+        this.highestBidderId = domain.getHighestBidderId();
+        this.endTime = domain.getEndTime();
+        this.status = domain.getStatus();
+    }
+
+    /** Chạy một thao tác của domain (start, finish, cancel...) rồi ghi kết quả về entity. */
+    public void transition(Consumer<Auction> action) {
+        Auction domain = toDomain();
+        action.accept(domain);
+        applyFrom(domain);
+    }
 }

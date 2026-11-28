@@ -21,6 +21,7 @@ import vn.edu.auction.shared.enums.AuctionStatus;
 import vn.edu.auction.shared.enums.ItemStatus;
 import vn.edu.auction.shared.enums.UserRole;
 import vn.edu.auction.shared.enums.UserStatus;
+import vn.edu.auction.shared.model.Auction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,14 +74,12 @@ public class AdminService {
     }
 
     //Nâng một tài khoản thường lên ADMIN (giải quyết issue #27).
-    //<p>Quy tắc:
-    //<ul>
-    //<li>Chỉ ADMIN gọi được (SecurityConfig đã chặn /api/admin/**).</li>
-    //<li>Tài khoản đích phải tồn tại và đang ACTIVE (đã xác minh email, chưa bị khóa/xóa mềm).</li>
-    //<li>Không nâng lại tài khoản đã là ADMIN.</li>
-    //</ul>
+    //Quy tắc:
+    //Chỉ ADMIN gọi được (SecurityConfig đã chặn /api/admin/**).
+    //Tài khoản đích phải tồn tại và đang ACTIVE (đã xác minh email, chưa bị khóa/xóa mềm).
+    //Không nâng lại tài khoản đã là ADMIN.
 
-    //<p>Khóa ghi (PESSIMISTIC_WRITE) dòng user đích: nếu 2 admin cùng nâng một người,
+    //Khóa ghi (PESSIMISTIC_WRITE) dòng user đích: nếu 2 admin cùng nâng một người,
     //người đến sau sẽ thấy role đã là ADMIN và nhận lỗi 409 thay vì ghi chồng.
 
     //@param adminId  id của admin đang thao tác (lấy từ JWT, chỉ dùng để ghi log kiểm toán)
@@ -164,7 +163,7 @@ public class AdminService {
         item.setStatus(ItemStatus.REMOVED);
         auctions.findByItemId(id).ifPresent(a -> {
             if (a.getStatus() == AuctionStatus.OPEN || a.getStatus() == AuctionStatus.RUNNING) {
-                a.setStatus(AuctionStatus.CANCELED);
+                a.transition(Auction::cancel);
                 auctions.save(a);
             }
         });
@@ -195,7 +194,7 @@ public class AdminService {
         AuctionRules.require(a != null, HttpStatus.NOT_FOUND, "Không tìm thấy phiên đấu giá.");
         AuctionRules.require(a.getStatus() == AuctionStatus.OPEN || a.getStatus() == AuctionStatus.RUNNING,
                 HttpStatus.CONFLICT, "Phiên không còn hoạt động.");
-        a.setStatus(AuctionStatus.CANCELED);
+        a.transition(Auction::cancel);
         auctions.save(a);
         publisher.publishAuctionFinished(a);
         social.onAuctionEnded(a, "đã bị quản trị viên dừng.");
