@@ -25,15 +25,17 @@ public class BidService {
     private final AuctionUserService users;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final AutoBidService autoBids;
 
     public BidService(AuctionRepository auctions, ItemRepository items, BidTransactionRepository bids,
-                      AuctionUserService users, ApplicationEventPublisher events, Clock auctionClock) {
+                      AuctionUserService users, ApplicationEventPublisher events, Clock auctionClock, AutoBidService autoBids) {
         this.auctions = auctions;
         this.items = items;
         this.bids = bids;
         this.users = users;
         this.events = events;
         this.clock = auctionClock;
+        this.autoBids = autoBids;
     }
 
     @Transactional
@@ -62,8 +64,11 @@ public class BidService {
         bid.setBidTime(now);
         bid.setStatus(BidStatus.ACCEPTED);
         bids.saveAndFlush(bid);
-        // P4 should consume this snapshot with @TransactionalEventListener(AFTER_COMMIT).
-        events.publishEvent(new BidAcceptedEvent(auctionId, amount, bidderId, auction.getStatus(), auction.getEndTime()));
+        // Auto-bid phản ứng ngay trong cùng transaction + cùng khóa phiên
+        autoBids.resolve(auction, now);
+        // Phát 1 event duy nhất với trạng thái CUỐI CÙNG (sau khi auto-bid chạy xong)
+        events.publishEvent(new BidAcceptedEvent(auctionId, auction.getCurrentPrice(),
+                auction.getHighestBidderId(), auction.getStatus(), auction.getEndTime()));
         return response(bid);
     }
 

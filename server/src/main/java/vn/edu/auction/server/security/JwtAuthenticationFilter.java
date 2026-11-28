@@ -50,7 +50,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 } else {
                     SecurityContextHolder.clearContext();
                 }
+            } catch (io.jsonwebtoken.ExpiredJwtException e) {
+                System.err.println("[JWT DEBUG] Token đã hết hạn: " + e.getMessage());
+                SecurityContextHolder.clearContext();
+
+            } catch (io.jsonwebtoken.security.SignatureException e) {
+                System.err.println("[JWT DEBUG] Sai chữ ký JWT: " + e.getMessage());
+                SecurityContextHolder.clearContext();
+
+            } catch (io.jsonwebtoken.MalformedJwtException e) {
+                System.err.println("[JWT DEBUG] JWT sai định dạng: " + e.getMessage());
+                SecurityContextHolder.clearContext();
+
             } catch (JwtException | IllegalArgumentException e) {
+                System.err.println("[JWT DEBUG] Token không hợp lệ: "
+                    + e.getClass().getSimpleName() + " - " + e.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }
