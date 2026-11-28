@@ -77,8 +77,10 @@ public final class BidHistoryChart extends VBox {
             }
         }
         for (BidResponse bid : accepted) {
+            String who = bid.getBidderName() != null && !bid.getBidderName().isBlank()
+                ? bid.getBidderName() : I18n.get("chart.bidder") + bid.getBidderId();
             addPoint(series, origin, bid.getBidTime(), bid.getAmount(), unit,
-                    I18n.get("chart.bidder") + bid.getBidderId(), demo ? null : bid.getBidderId());
+                who, demo ? null : bid.getBidderId());
         }
         chart.getData().add(series);
         getChildren().add(chart);
