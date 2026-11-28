@@ -16,12 +16,14 @@ import vn.edu.auction.server.repository.*;
 import vn.edu.auction.shared.dto.AutoBidRequest;
 import vn.edu.auction.shared.dto.AutoBidResponse;
 import vn.edu.auction.shared.enums.*;
+import vn.edu.auction.server.exception.AuctionBusinessException;
+import vn.edu.auction.shared.model.Auction;
+import vn.edu.auction.shared.model.BidRejectedException;
 
 @Service
 @Transactional
 public class AutoBidService {
-    private static final long SNIPE_WINDOW_SECONDS = 10;
-    private static final long EXTENSION_SECONDS = 60;
+
 
     /** Ưu tiên: maxBid cao hơn -> đăng ký sớm hơn -> id nhỏ hơn. */
     private static final Comparator<AutoBidEntity> PRIORITY =
@@ -58,7 +60,8 @@ public class AutoBidService {
         AuctionRules.require(!item.getSellerId().equals(bidderId), HttpStatus.FORBIDDEN,
                 "Không được đấu giá tự động sản phẩm của mình.");
         LocalDateTime now = LocalDateTime.now(clock);
-        requireOpen(auction, now);
+        AuctionRules.require(toDomain(auction).isAcceptingBids(now), HttpStatus.CONFLICT,
+            "Phiên chưa mở hoặc đã kết thúc.");
         AuctionRules.require(request != null, HttpStatus.BAD_REQUEST, "Thiếu giá tối đa hoặc bước giá.");
         BigDecimal max = AuctionRules.money(request.getMaxBid());
         BigDecimal inc = AuctionRules.money(request.getIncrement());
@@ -139,13 +142,17 @@ public class AutoBidService {
     }
 
     private void placeAutoBid(AuctionEntity auction, Long bidderId, BigDecimal amount, LocalDateTime now) {
-        // Chống sniping: giống bid tay (chỉ gia hạn 1 lần vì sau khi gia hạn đã ra ngoài cửa sổ 10s)
-        if (!now.isBefore(auction.getEndTime().minusSeconds(SNIPE_WINDOW_SECONDS))) {
-            auction.setEndTime(auction.getEndTime().plusSeconds(EXTENSION_SECONDS));
+        Auction domain = toDomain(auction);
+        try {
+            // Cùng luật với bid tay: giá phải cao hơn, phiên đang mở, gia hạn chống sniping
+            domain.placeBid(bidderId, amount, now);
+        } catch (BidRejectedException e) {
+            throw new AuctionBusinessException(HttpStatus.CONFLICT, e.getMessage());
         }
-        auction.setStatus(AuctionStatus.RUNNING);
-        auction.setCurrentPrice(amount);
-        auction.setHighestBidderId(bidderId);
+        auction.setEndTime(domain.getEndTime());
+        auction.setStatus(domain.getStatus());
+        auction.setCurrentPrice(domain.getCurrentPrice());
+        auction.setHighestBidderId(domain.getHighestBidderId());
 
         BidTransactionEntity bid = new BidTransactionEntity();
         bid.setAuctionId(auction.getId());
@@ -156,10 +163,9 @@ public class AutoBidService {
         bids.saveAndFlush(bid);
     }
 
-    private void requireOpen(AuctionEntity auction, LocalDateTime now) {
-        boolean activeStatus = auction.getStatus() == AuctionStatus.RUNNING || auction.getStatus() == AuctionStatus.OPEN;
-        AuctionRules.require(activeStatus && !now.isBefore(auction.getStartTime()) && now.isBefore(auction.getEndTime()),
-                HttpStatus.CONFLICT, "Phiên chưa mở hoặc đã kết thúc.");
+    private static Auction toDomain(AuctionEntity a) {
+        return new Auction(a.getId(), a.getItemId(), a.getCurrentPrice(), a.getHighestBidderId(),
+            a.getStartTime(), a.getEndTime(), a.getStatus());
     }
 
     private AutoBidResponse response(AutoBidEntity ab) {
