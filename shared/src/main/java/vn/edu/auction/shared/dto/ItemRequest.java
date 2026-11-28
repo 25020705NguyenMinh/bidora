@@ -1,6 +1,7 @@
 package vn.edu.auction.shared.dto;
 
 import java.math.BigDecimal;
+import vn.edu.auction.shared.enums.ItemCategory;
 
 public class ItemRequest {
     private String image;
@@ -11,6 +12,10 @@ public class ItemRequest {
     private String name;
     private String description;
     private BigDecimal startingPrice;
+
+    private ItemCategory category;
+    public ItemCategory getCategory() { return category; }
+    public void setCategory(ItemCategory category) { this.category = category; }
 
     public ItemRequest(String name, String description, BigDecimal startingPrice){
         this.name = name;

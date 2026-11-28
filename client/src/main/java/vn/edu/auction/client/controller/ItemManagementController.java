@@ -36,6 +36,9 @@ import vn.edu.auction.shared.dto.ItemResponse;
 import vn.edu.auction.shared.enums.AuctionStatus;
 import vn.edu.auction.shared.enums.ItemStatus;
 import vn.edu.auction.shared.enums.UserRole;
+import javafx.scene.control.ComboBox;
+import vn.edu.auction.client.ui.CategoryLabels;
+import vn.edu.auction.shared.enums.ItemCategory;
 
 /**
  * Quản lý sản phẩm.
@@ -43,6 +46,9 @@ import vn.edu.auction.shared.enums.UserRole;
  * - Cho Admin: Xem danh sách cần phê duyệt / sắp bán / đang bán / tất cả, phê duyệt kèm feedback gửi thông báo, từ chối, xóa sản phẩm.
  */
 public class ItemManagementController {
+
+    @FXML private ComboBox<ItemCategory> categoryBox;
+    @FXML private TableColumn<ItemResponse, String> categoryColumn;
 
     @FXML private Label titleLabel;
     @FXML private Label subtitleLabel;
@@ -126,6 +132,7 @@ public class ItemManagementController {
         sellerColumn.setCellValueFactory(row -> new ReadOnlyObjectWrapper<>(
                 row.getValue().getSellerId() != null ? "#" + row.getValue().getSellerId() : "—"));
         nameColumn.setCellValueFactory(row -> new ReadOnlyObjectWrapper<>(row.getValue().getName()));
+        categoryColumn.setCellValueFactory(row -> new ReadOnlyObjectWrapper<>(CategoryLabels.of(row.getValue().getCategory())));
         descriptionColumn.setCellValueFactory(row -> new ReadOnlyObjectWrapper<>(row.getValue().getDescription()));
         priceColumn.setCellValueFactory(row -> new ReadOnlyObjectWrapper<>(UiKit.money(row.getValue().getStartingPrice())));
         statusColumn.setCellValueFactory(row -> new ReadOnlyObjectWrapper<>(statusText(row.getValue())));
@@ -137,6 +144,7 @@ public class ItemManagementController {
                 nameField.setText(newSelection.getName());
                 descriptionArea.setText(newSelection.getDescription());
                 startingPriceField.setText(newSelection.getStartingPrice().toPlainString());
+                categoryBox.setValue(newSelection.getCategory() == null ? ItemCategory.LIFE : newSelection.getCategory());
                 if (isAdmin) {
                     boolean isDraft = newSelection.getStatus() == ItemStatus.DRAFT;
                     approveButton.setDisable(!isDraft);
@@ -147,6 +155,18 @@ public class ItemManagementController {
         });
 
         I18n.onChange(itemTable, itemTable::refresh);
+        categoryBox.getItems().setAll(ItemCategory.values());
+        categoryBox.setConverter(new javafx.util.StringConverter<>() {
+            @Override public String toString(ItemCategory c) { return c == null ? "" : CategoryLabels.of(c); }
+            @Override public ItemCategory fromString(String s) { return null; }
+        });
+        categoryBox.setValue(ItemCategory.LIFE);
+        categoryBox.setDisable(isAdmin);   // admin chỉ xem khi duyệt
+        I18n.onChange(categoryBox, () -> { // đổi ngôn ngữ: vẽ lại tên danh mục
+            ItemCategory v = categoryBox.getValue();
+            categoryBox.getItems().setAll(ItemCategory.values());
+            categoryBox.setValue(v);
+        });
         showImage("");
         chooseImageButton.setDisable(isAdmin);
         removeImageButton.setDisable(isAdmin);
@@ -577,6 +597,7 @@ public class ItemManagementController {
         startingPriceField.clear();
         if (feedbackArea != null) feedbackArea.clear();
         itemTable.getSelectionModel().clearSelection();
+        categoryBox.setValue(ItemCategory.LIFE);
     }
 
     private void showLocalizedMessage(String key, Object... args) {
@@ -601,6 +622,7 @@ public class ItemManagementController {
         if (price.signum() <= 0) { showLocalizedMessage("manage.positivePrice"); return null; }
         ItemRequest request = new ItemRequest(name, descriptionArea.getText().trim(), price);
         request.setImage(selectedImage);
+        request.setCategory(categoryBox.getValue());
         return request;
     }
 

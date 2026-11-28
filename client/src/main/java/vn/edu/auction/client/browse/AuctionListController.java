@@ -22,19 +22,16 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import vn.edu.auction.client.api.AutoBidApiClient;
+import vn.edu.auction.client.ui.*;
 import vn.edu.auction.shared.dto.AutoBidRequest;
 import vn.edu.auction.shared.dto.AutoBidResponse;
 
-import vn.edu.auction.client.ui.MarketCard;
 import vn.edu.auction.client.api.AuctionApiClient;
 import vn.edu.auction.client.api.AuctionRealtimeClient;
 import vn.edu.auction.client.api.BaseApiClient;
 import vn.edu.auction.client.api.BidApiClient;
 import vn.edu.auction.client.api.FxAsync;
 import vn.edu.auction.client.model.SessionData;
-import vn.edu.auction.client.ui.BidHistoryChart;
-import vn.edu.auction.client.ui.UiKit;
-import vn.edu.auction.client.ui.WatchBar;
 import vn.edu.auction.shared.dto.AuctionResponse;
 import vn.edu.auction.shared.dto.BidResponse;
 import vn.edu.auction.shared.dto.PlaceBidRequest;
@@ -64,6 +61,7 @@ public class AuctionListController extends CatalogController {
 
     @FXML private void initialize() {
         initializeCatalog(this::renderCards);
+        installCategoryBar(this::renderCards);
         grid.sceneProperty().addListener((obs, before, scene) -> {
             if (scene == null && unsubscribe != null) {
                 unsubscribe.run();
@@ -114,6 +112,7 @@ public class AuctionListController extends CatalogController {
         for (AuctionResponse a : auctions) {
             if (a.getItemName() == null || !a.getItemName().toLowerCase(Locale.ROOT).contains(keyword)) continue;
             if (tabOf(a) != tab) continue;
+            if (!matchesCategory(a.getCategory())) continue;
             MarketCard card = new MarketCard(a.getItemName(), I18n.get("auction.currentPrice"), status(effective(a)),
                     UiKit.money(a.getCurrentPrice()), secondary(a), I18n.get("auction.open"), () -> openFeatured(a));
             card.setProductImage(a.getImage(), a.getItemName());
@@ -167,7 +166,8 @@ public class AuctionListController extends CatalogController {
                 leader.getScene().getWindow(), selected.getHighestBidderId(), false));
         Label end = new Label();
         Label starts = new Label();
-        VBox metadata = new VBox(10, starting, leader, starts, end);
+        Label categoryLabel = new Label(I18n.get("item.category", CategoryLabels.of(selected.getCategory())));
+        VBox metadata = new VBox(10, starting, categoryLabel, leader, starts, end);
         if (selected.getSellerId() != null) {
             var seller = I18n.caption(new javafx.scene.control.Hyperlink(), "profile.seller");
             seller.setOnAction(e -> vn.edu.auction.client.ui.TradingProfileDialog.show(

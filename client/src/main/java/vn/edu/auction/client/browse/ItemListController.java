@@ -14,6 +14,7 @@ import javafx.scene.layout.VBox;
 import vn.edu.auction.client.api.FxAsync;
 import vn.edu.auction.client.api.ItemApiClient;
 import vn.edu.auction.client.model.SessionData;
+import vn.edu.auction.client.ui.CategoryLabels;
 import vn.edu.auction.client.ui.MarketCard;
 import vn.edu.auction.client.ui.UiKit;
 import vn.edu.auction.client.ui.UiTheme;
@@ -28,6 +29,7 @@ public class ItemListController extends CatalogController {
 
     @FXML private void initialize() {
         initializeCatalog(this::renderCards);
+        installCategoryBar(this::renderCards);
         reloadHook = this::loadItems;
         loadItems();
     }
@@ -54,6 +56,7 @@ public class ItemListController extends CatalogController {
         grid.getChildren().clear();
         for (ItemResponse item : items) {
             if (item.getName() == null || !item.getName().toLowerCase(Locale.ROOT).contains(query)) continue;
+            if (!matchesCategory(item.getCategory())) continue;
             MarketCard card = new MarketCard(item.getName(), I18n.get("item.startingPrice"), status(item.getStatus()),
                     UiKit.money(item.getStartingPrice()), I18n.get("item.sellerId") + item.getSellerId(),
                     I18n.get("item.open"), () -> showDetail(item));
@@ -77,7 +80,9 @@ public class ItemListController extends CatalogController {
         description.setWrapText(true);
         var photo = vn.edu.auction.client.ui.ProductPhoto.view(item.getImage(), item.getName(), 210);
         photo.getStyleClass().add("detail-photo");
-        VBox content = new VBox(12, photo, new Label(status(item.getStatus())), new VBox(2, caption, price), description);
+        VBox content = new VBox(12, photo, new Label(status(item.getStatus())),
+            new Label(I18n.get("item.category", CategoryLabels.of(item.getCategory()))),
+            new VBox(2, caption, price), description);
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -91,6 +96,7 @@ public class ItemListController extends CatalogController {
         vn.edu.auction.client.ui.UiMotion.install(dialog);
         dialog.getDialogPane().getStylesheets().add(getClass().getResource("/vn/edu/auction/client/css/catalog.css").toExternalForm());
         dialog.show();
+
     }
 
     private static String status(ItemStatus value) {

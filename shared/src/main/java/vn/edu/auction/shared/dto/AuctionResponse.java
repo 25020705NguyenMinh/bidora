@@ -1,6 +1,7 @@
 package vn.edu.auction.shared.dto;
 
 import vn.edu.auction.shared.enums.AuctionStatus;
+import vn.edu.auction.shared.enums.ItemCategory;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -25,6 +26,10 @@ public class AuctionResponse {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private AuctionStatus status;
+
+    private ItemCategory category;
+    public ItemCategory getCategory() { return category; }
+    public void setCategory(ItemCategory category) { this.category = category; }
 
     public AuctionResponse(Long id, Long itemId, String itemName,
                            BigDecimal startingPrice, BigDecimal currentPrice,

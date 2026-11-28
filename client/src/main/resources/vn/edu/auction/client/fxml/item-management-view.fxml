@@ -40,6 +40,7 @@
          <TableColumn fx:id="idColumn" prefWidth="55" I18n.caption="table.id"/>
          <TableColumn fx:id="sellerColumn" prefWidth="95" I18n.caption="table.seller"/>
          <TableColumn fx:id="nameColumn" prefWidth="160" I18n.caption="table.item"/>
+         <TableColumn fx:id="categoryColumn" prefWidth="100" I18n.caption="table.category"/>
          <TableColumn fx:id="descriptionColumn" prefWidth="180" I18n.caption="table.description"/>
          <TableColumn fx:id="priceColumn" prefWidth="130" I18n.caption="table.startingPrice"/>
          <TableColumn fx:id="statusColumn" prefWidth="135" I18n.caption="table.status"/>
@@ -68,6 +69,10 @@
        <VBox spacing="6">
         <Label I18n.caption="manage.price" styleClass="field-label"/>
         <TextField fx:id="startingPriceField" I18n.prompt="manage.pricePrompt"/>
+       </VBox>
+       <VBox spacing="6">
+              <Label I18n.caption="manage.category" styleClass="field-label"/>
+              <ComboBox fx:id="categoryBox" maxWidth="Infinity"/>
        </VBox>
        <VBox fx:id="feedbackBox" spacing="6" visible="false" managed="false">
         <Label I18n.caption="manage.feedback" styleClass="field-label"/>

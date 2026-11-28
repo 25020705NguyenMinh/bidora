@@ -12,6 +12,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.TilePane;
 import vn.edu.auction.client.ui.MarketCard;
 import vn.edu.auction.client.ui.UiKit;
+import javafx.geometry.Pos;
+import javafx.scene.layout.VBox;
+import vn.edu.auction.shared.enums.ItemCategory;
 
 /** Shared layout and mutually exclusive guest, loading, result and error states. */
 abstract class CatalogController {
@@ -23,6 +26,49 @@ abstract class CatalogController {
     @FXML private Label messageLabel;
     @FXML private Button refreshButton;
     protected boolean loaded;
+    /** Danh mục đang chọn; null = tất cả. */
+    protected ItemCategory category;
+    private HBox categoryBar;
+    private Button allCategoryButton;
+    private final java.util.Map<ItemCategory, Button> categoryButtons = new java.util.LinkedHashMap<>();
+
+    /** Dựng thanh danh mục ngay dưới ô tìm kiếm; gọi 1 lần sau initializeCatalog. */
+    protected void installCategoryBar(Runnable filter) {
+        allCategoryButton = I18n.caption(new Button(), "category.all");
+        allCategoryButton.setOnAction(e -> selectCategory(null, filter));
+        categoryBar = new HBox(8, allCategoryButton);
+        categoryBar.setAlignment(Pos.CENTER_LEFT);
+        for (ItemCategory c : ItemCategory.values()) {
+            Button b = I18n.caption(new Button(), "category." + c.name());
+            b.setOnAction(e -> selectCategory(c, filter));
+            categoryButtons.put(c, b);
+            categoryBar.getChildren().add(b);
+        }
+        if (tools.getParent() instanceof VBox root) {
+            root.getChildren().add(root.getChildren().indexOf(tools) + 1, categoryBar);
+        }
+        styleCategoryButtons();
+    }
+
+    private void selectCategory(ItemCategory next, Runnable filter) {
+        category = next;
+        styleCategoryButtons();
+        if (loaded) filter.run();
+    }
+
+    private void styleCategoryButtons() {
+        styleChip(allCategoryButton, category == null);
+        categoryButtons.forEach((c, b) -> styleChip(b, c == category));
+    }
+
+    private static void styleChip(Button b, boolean selected) {
+        b.getStyleClass().removeAll("primary-button", "outline-button");
+        b.getStyleClass().add(selected ? "primary-button" : "outline-button");
+    }
+
+    protected boolean matchesCategory(ItemCategory c) {
+        return category == null || (c == null ? ItemCategory.LIFE : c) == category;
+    }
 
     protected void initializeCatalog(Runnable filter) {
         I18n.onChange(searchField, () -> { if (loaded) filter.run(); });
@@ -47,6 +93,7 @@ abstract class CatalogController {
         grid.getChildren().clear();
         if (guestPanel != null) show(guestPanel, !canBrowse);
         show(tools, canBrowse);
+        if (categoryBar != null) show(categoryBar, canBrowse);
         show(catalogScroll, canBrowse);
         show(messageLabel, canBrowse);
         searchField.setDisable(true);

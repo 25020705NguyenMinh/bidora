@@ -2,8 +2,16 @@ package vn.edu.auction.server.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import vn.edu.auction.shared.enums.*;
+import vn.edu.auction.shared.enums.ItemCategory;
 
+
+@Enumerated(EnumType.STRING)
+@Column(name = "category", length = 20)
+private ItemCategory category;
+
+/** Sản phẩm cũ chưa có danh mục => LIFE. */
+public ItemCategory getCategory() { return category == null ? ItemCategory.LIFE : category; }
+public void setCategory(ItemCategory category) { this.category = category; }
 @Entity
 @Table(name = "items")
 public class ItemEntity {
