@@ -23,6 +23,7 @@ public final class BidHistoryChart extends VBox {
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final DateTimeFormatter FULL_TIME = DateTimeFormatter.ofPattern("dd/MM HH:mm:ss");
 
+
     public BidHistoryChart(BigDecimal startingPrice, LocalDateTime startTime,
                            List<BidResponse> history, boolean demo) {
         super(10);
@@ -68,11 +69,18 @@ public final class BidHistoryChart extends VBox {
         chart.getStyleClass().add("bid-history-chart");
         XYChart.Series<Number, Number> series = new XYChart.Series<>();
         if (startingPrice != null && startTime != null) {
-            addPoint(series, origin, startTime, startingPrice, unit, I18n.get("item.startingPrice"), null);
+            for (BidResponse bid : accepted) {
+                String who = bid.getBidderName() != null && !bid.getBidderName().isBlank()
+                    ? bid.getBidderName() : I18n.get("chart.bidder") + bid.getBidderId();
+                addPoint(series, origin, bid.getBidTime(), bid.getAmount(), unit,
+                    who, demo ? null : bid.getBidderId());
+            }
         }
         for (BidResponse bid : accepted) {
+            String who = bid.getBidderName() != null && !bid.getBidderName().isBlank()
+                ? bid.getBidderName() : I18n.get("chart.bidder") + bid.getBidderId();
             addPoint(series, origin, bid.getBidTime(), bid.getAmount(), unit,
-                    I18n.get("chart.bidder") + bid.getBidderId(), demo ? null : bid.getBidderId());
+                who, demo ? null : bid.getBidderId());
         }
         chart.getData().add(series);
         getChildren().add(chart);

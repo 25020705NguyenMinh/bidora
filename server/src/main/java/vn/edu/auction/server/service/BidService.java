@@ -27,15 +27,17 @@ public class BidService {
     private final AuctionUserService users;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final AutoBidService autoBids;
 
     public BidService(AuctionRepository auctions, ItemRepository items, BidTransactionRepository bids,
-                      AuctionUserService users, ApplicationEventPublisher events, Clock auctionClock) {
+                      AuctionUserService users, ApplicationEventPublisher events, Clock auctionClock,AutoBidService autoBids) {
         this.auctions = auctions;
         this.items = items;
         this.bids = bids;
         this.users = users;
         this.events = events;
         this.clock = auctionClock;
+        this.autoBids = autoBids;
     }
 
     @Transactional
@@ -69,14 +71,24 @@ public class BidService {
         bid.setBidTime(now);
         bid.setStatus(BidStatus.ACCEPTED);
         bids.saveAndFlush(bid);
+        // Auto-bid phản ứng ngay trong cùng transaction + cùng khóa phiên
+        autoBids.resolve(auction, now);
         // P4 should consume this snapshot with @TransactionalEventListener(AFTER_COMMIT).
-        events.publishEvent(new BidAcceptedEvent(auctionId, amount, bidderId, auction.getStatus(), auction.getEndTime()));
+        // Phát 1 event với trạng thái CUỐI (sau khi auto-bid chạy xong), không dùng amount của bid tay
+        events.publishEvent(new BidAcceptedEvent(auctionId, auction.getCurrentPrice(),
+            auction.getHighestBidderId(), auction.getStatus(), auction.getEndTime()));
         return response(bid);
     }
 
     public List<BidResponse> getBidHistory(Long auctionId) {
         AuctionRules.require(auctions.existsByIdAndHiddenFalse(auctionId), HttpStatus.NOT_FOUND, "Không tìm thấy phiên đấu giá.");
-        return bids.findByAuctionIdOrderByBidTimeDescIdDesc(auctionId).stream().map(this::response).toList();
+        java.util.Map<Long, String> names = new java.util.HashMap<>(); // mỗi người chỉ tra 1 lần
+        return bids.findByAuctionIdOrderByBidTimeDescIdDesc(auctionId).stream().map(b -> {
+            BidResponse r = response(b);
+            r.setBidderName(names.computeIfAbsent(b.getBidderId(),
+                id -> users.findById(id).map(UserEntity::getFullName).orElse(null)));
+            return r;
+        }).toList();
     }
 
     
